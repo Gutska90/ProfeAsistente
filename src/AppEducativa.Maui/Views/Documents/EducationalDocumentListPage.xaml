@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Documents"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Documents.EducationalDocumentListPage"
+             x:DataType="vm:EducationalDocumentListViewModel"
+             Title="Materiales educativos">
+    <VerticalStackLayout Padding="16" Spacing="10">
+        <Label Text="{Binding MensajeEstado}" FontSize="13" />
+        <FlexLayout Wrap="Wrap">
+            <Button Text="Generar guía" Command="{Binding GenerarCommand}" CommandParameter="LearningGuide" Margin="0,0,8,8" />
+            <Button Text="Generar ejercicios" Command="{Binding GenerarCommand}" CommandParameter="Exercises" Margin="0,0,8,8" />
+            <Button Text="Generar prueba" Command="{Binding GenerarCommand}" CommandParameter="Assessment"
+                    BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
+            <Button Text="Actualizar" Command="{Binding CargarCommand}" Margin="0,0,8,8" />
+        </FlexLayout>
+        <CollectionView ItemsSource="{Binding Documentos}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:EducationalDocumentSummaryDto">
+                    <Border Stroke="#DDD" Padding="12" Margin="0,0,0,8">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:EducationalDocumentListViewModel}}, Path=AbrirCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding Title}" FontAttributes="Bold" />
+                            <Label FontSize="12" TextColor="#555"
+                                   Text="{Binding DocumentType, StringFormat='Tipo: {0}'}" />
+                            <Label FontSize="12" TextColor="#555"
+                                   Text="{Binding Status, StringFormat='Estado: {0}'}" />
+                            <Label FontSize="12" TextColor="#555"
+                                   Text="{Binding ItemCount, StringFormat='Ítems: {0}'}" />
+                            <Label Text="Desactualizado" TextColor="#E65100" FontAttributes="Bold" FontSize="12"
+                                   IsVisible="{Binding IsOutdated}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+    </VerticalStackLayout>
+</ContentPage>

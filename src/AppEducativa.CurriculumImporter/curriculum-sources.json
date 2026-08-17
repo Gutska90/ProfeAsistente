@@ -1,0 +1,20 @@
+[
+  {
+    "nombre": "Programa de Estudio Matemática 4° Básico (JSON validado MVP)",
+    "url": "samples/4b-matematica-unidad-fracciones.json",
+    "tipo": "ManualJson",
+    "formato": "Json",
+    "nivel": "4° Básico",
+    "asignatura": "Matemática",
+    "activo": true
+  },
+  {
+    "nombre": "Programa de Estudio Matemática 4° Básico (PDF oficial — configurar URL)",
+    "url": "https://www.curriculumnacional.cl/",
+    "tipo": "ProgramaEstudio",
+    "formato": "Pdf",
+    "nivel": "4° Básico",
+    "asignatura": "Matemática",
+    "activo": false
+  }
+]

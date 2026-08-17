@@ -1,0 +1,51 @@
+## .NET / build
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+*.dll
+*.exe
+*.pdb
+*.cache
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## AppEducativa local data
+appeducativa.db
+appeducativa.db-*
+*.db-shm
+*.db-wal
+App_Data/
+*.docx
+*.pdf
+
+## Secrets / local config
+.env
+.env.*
+*.local.json
+appsettings.*.local.json
+appsettings.Development.local.json
+secrets.json
+
+## OS / IDE
+.DS_Store
+.idea/
+*.swp
+*~
+.cursor/
+Untitled
+
+## MAUI / Xcode
+*.app/
+*.xcuserstate
+xcuserdata/

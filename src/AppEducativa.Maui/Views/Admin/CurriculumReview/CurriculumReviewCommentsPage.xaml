@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Admin.CurriculumReview"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Admin.CurriculumReview.CurriculumReviewCommentsPage"
+             x:DataType="vm:CurriculumReviewCommentsViewModel"
+             Title="Comentarios">
+
+    <VerticalStackLayout Padding="16" Spacing="10">
+        <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+        <Entry Placeholder="Nuevo comentario"
+               Text="{Binding NuevoComentario}" />
+        <HorizontalStackLayout Spacing="8">
+            <Button Text="Agregar" Command="{Binding AgregarCommand}" />
+            <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+        </HorizontalStackLayout>
+
+        <CollectionView ItemsSource="{Binding Comments}" VerticalOptions="FillAndExpand">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:ReviewCommentDto">
+                    <VerticalStackLayout Padding="0,6" Spacing="2">
+                        <Label Text="{Binding Severity}" FontAttributes="Bold" FontSize="12" />
+                        <Label Text="{Binding Message}" FontSize="12" LineBreakMode="WordWrap" />
+                        <Label Text="{Binding CreatedAt}" FontSize="11" TextColor="#555" />
+                        <Label Text="{Binding IsResolved, StringFormat='Resuelto: {0}'}" FontSize="11" />
+                        <Button Text="Resolver"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CurriculumReviewCommentsViewModel}}, Path=ResolverCommand}"
+                                CommandParameter="{Binding .}" />
+                        <BoxView HeightRequest="1" Color="#DDD" Margin="0,4,0,0" />
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

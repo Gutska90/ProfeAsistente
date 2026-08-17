@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels"
+             x:Class="AppEducativa.Maui.Views.ClassStructureEditorPage"
+             x:DataType="vm:ClassStructureEditorViewModel"
+             Title="Editar estructura">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="{Binding MensajeEstado}" FontSize="13" TextColor="#333" LineBreakMode="WordWrap" />
+            <Label Text="{Binding Status, StringFormat='Estado: {0}'}" FontSize="12" TextColor="#555" />
+            <Label Text="{Binding CurriculumRefs}" FontSize="12" TextColor="#555" LineBreakMode="WordWrap" />
+            <Label Text="Requiere revisión" TextColor="#C62828" FontAttributes="Bold"
+                   IsVisible="{Binding RequiresReview}" />
+            <Label Text="Desactualizada (cambió OA/indicadores/Bloom)" TextColor="#E65100" FontAttributes="Bold"
+                   IsVisible="{Binding IsOutdated}" />
+            <Label Text="Versión vigente de la clase" TextColor="#2E7D32" FontAttributes="Bold"
+                   IsVisible="{Binding IsCurrentVersion}" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            <Label Text="Título" FontAttributes="Bold" />
+            <Entry Text="{Binding Title}" />
+
+            <Label Text="Propósito" FontAttributes="Bold" />
+            <Editor Text="{Binding Purpose}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+
+            <Label Text="Inicio" FontAttributes="Bold" FontSize="16" Margin="0,12,0,0" />
+            <Label Text="Duración (min)" FontSize="12" />
+            <Entry Text="{Binding StartDuration}" Keyboard="Numeric" />
+            <Label Text="Objetivo" FontSize="12" />
+            <Editor Text="{Binding StartObjective}" AutoSize="TextChanges" MinimumHeightRequest="50" />
+            <Label Text="Acciones docente (una por línea)" FontSize="12" />
+            <Editor Text="{Binding StartTeacherActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+            <Label Text="Acciones estudiante (una por línea)" FontSize="12" />
+            <Editor Text="{Binding StartStudentActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+
+            <Label Text="Desarrollo" FontAttributes="Bold" FontSize="16" Margin="0,12,0,0" />
+            <Label Text="Duración (min)" FontSize="12" />
+            <Entry Text="{Binding DevelopmentDuration}" Keyboard="Numeric" />
+            <Label Text="Objetivo" FontSize="12" />
+            <Editor Text="{Binding DevelopmentObjective}" AutoSize="TextChanges" MinimumHeightRequest="50" />
+            <Label Text="Acciones docente (una por línea)" FontSize="12" />
+            <Editor Text="{Binding DevelopmentTeacherActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+            <Label Text="Acciones estudiante (una por línea)" FontSize="12" />
+            <Editor Text="{Binding DevelopmentStudentActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+
+            <Label Text="Cierre" FontAttributes="Bold" FontSize="16" Margin="0,12,0,0" />
+            <Label Text="Duración (min)" FontSize="12" />
+            <Entry Text="{Binding ClosureDuration}" Keyboard="Numeric" />
+            <Label Text="Objetivo" FontSize="12" />
+            <Editor Text="{Binding ClosureObjective}" AutoSize="TextChanges" MinimumHeightRequest="50" />
+            <Label Text="Acciones docente (una por línea)" FontSize="12" />
+            <Editor Text="{Binding ClosureTeacherActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+            <Label Text="Acciones estudiante (una por línea)" FontSize="12" />
+            <Editor Text="{Binding ClosureStudentActions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+
+            <Label Text="Advertencias" FontAttributes="Bold" Margin="0,12,0,0" />
+            <CollectionView ItemsSource="{Binding Advertencias}" HeightRequest="100">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Label Text="{Binding .}" FontSize="12" TextColor="#8A6D3B" LineBreakMode="WordWrap" Margin="0,2" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Comparación de versiones" FontAttributes="Bold" Margin="0,12,0,0"
+                   IsVisible="{Binding MostrarComparacion}" />
+            <Label Text="{Binding ComparacionTexto}" FontSize="12" TextColor="#333"
+                   LineBreakMode="WordWrap" IsVisible="{Binding MostrarComparacion}" />
+
+            <FlexLayout Wrap="Wrap" Margin="0,8,0,16">
+                <Button Text="Guardar contenido"
+                        Command="{Binding GuardarCommand}"
+                        BackgroundColor="#4A7C59"
+                        TextColor="White"
+                        Margin="0,0,8,8" />
+                <Button Text="Comparar con anterior"
+                        Command="{Binding CompararConAnteriorCommand}"
+                        BackgroundColor="#6D4C41"
+                        TextColor="White"
+                        Margin="0,0,8,8" />
+                <Button Text="Establecer como vigente"
+                        Command="{Binding EstablecerVigenteCommand}"
+                        BackgroundColor="#2F5D8C"
+                        TextColor="White"
+                        Margin="0,0,8,8" />
+                <Button Text="Generar otra versión"
+                        Command="{Binding GenerarOtraVersionCommand}"
+                        Margin="0,0,8,8" />
+            </FlexLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

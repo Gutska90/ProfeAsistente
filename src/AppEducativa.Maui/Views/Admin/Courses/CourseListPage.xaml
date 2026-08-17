@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Admin.Courses"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Admin.Courses.CourseListPage"
+             x:DataType="vm:CourseListViewModel"
+             Title="Cursos">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20" RowSpacing="12">
+        <VerticalStackLayout Spacing="8">
+            <Label Text="Cursos" Style="{StaticResource TitleLabel}"/>
+            <Label Text="Cada curso tiene un nivel (para la planificación) y una letra. La nómina se inscribe aquí."
+                   Style="{StaticResource CaptionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Nuevo curso" FontAttributes="Bold"/>
+                    <Label Text="Nivel" FontSize="13"/>
+                    <CollectionView ItemsSource="{Binding Niveles}" SelectedItem="{Binding SelectedLevel}"
+                                    SelectionMode="Single" HeightRequest="120">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="dto:NivelDto">
+                                <Label Text="{Binding Nombre}" Padding="10,8"/>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Entry Placeholder="Nombre (opcional, p. ej. 4° básico)" Text="{Binding NewName}"/>
+                    <Entry Placeholder="Letra / sección" Text="{Binding NewSection}"/>
+                    <Button Text="Crear curso" Command="{Binding CreateCommand}"/>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Courses}" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:SchoolCourseDto">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenCommand}"
+                                CommandParameter="{Binding .}"/>
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding DisplayName}" FontAttributes="Bold"/>
+                            <Label Text="Toque para abrir" FontSize="12" TextColor="{StaticResource Primary}"/>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+            <Button Text="Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}"/>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels"
+             x:Class="AppEducativa.Maui.Views.AdministrarCurriculumPage"
+             x:DataType="vm:AdministrarCurriculumViewModel"
+             Title="Administrar currículum">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+            <Label Text="Importador curricular oficial" FontSize="22" FontAttributes="Bold" />
+            <Label Text="Flujo: fuente → descarga → extracción → validación → revisión → aprobación → importación SQLite."
+                   TextColor="Gray" LineBreakMode="WordWrap" />
+            <Label Text="{Binding VersionInfo}" FontSize="13" />
+            <Label Text="{Binding MensajeEstado}" FontSize="12" TextColor="#444" LineBreakMode="WordWrap" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            <Button Text="Fuentes configuradas" Command="{Binding IrAFuentesCommand}" />
+            <Button Text="Lotes de importación" Command="{Binding IrALotesCommand}" />
+            <Button Text="Crear lote Matemática 4° Básico" Command="{Binding CrearLoteMat4Command}" />
+            <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Admin"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Admin.CurriculumImportsPage"
+             x:DataType="vm:CurriculumImportsViewModel"
+             Title="Lotes de importación">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="Importaciones curriculares" FontSize="20" FontAttributes="Bold" />
+            <Label Text="Pendiente · Aprobado · Importado · Error. El seed demostrativo sigue visible en el planificador hasta IncludeDemoData=false."
+                   TextColor="#555" LineBreakMode="WordWrap" />
+            <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+                <Button Text="Nuevo lote MAT 4B" Command="{Binding CrearLoteMat4Command}" />
+            </HorizontalStackLayout>
+
+            <CollectionView ItemsSource="{Binding Lotes}" HeightRequest="420">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:CurriculumAdminBatchDto">
+                        <Border Stroke="#DDD" Padding="12" Margin="0,0,0,8">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding Estado}" FontAttributes="Bold" FontSize="14" />
+                                <Label Text="{Binding SourceExternalId}" FontSize="12" TextColor="#336699" />
+                                <Label Text="{Binding Mensaje}" FontSize="12" TextColor="#444" />
+                                <Label Text="{Binding FechaInicio}" FontSize="11" TextColor="#666" />
+                                <Button Text="Abrir detalle"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CurriculumImportsViewModel}}, Path=AbrirDetalleCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

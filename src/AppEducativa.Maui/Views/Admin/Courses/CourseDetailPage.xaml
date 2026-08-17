@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Admin.Courses"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Admin.Courses.CourseDetailPage"
+             x:DataType="vm:CourseDetailViewModel"
+             Title="Curso">
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <Label Text="{Binding Course.DisplayName}" Style="{StaticResource TitleLabel}"/>
+        <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+        <Label Text="Asignaturas del curso" Style="{StaticResource SectionLabel}"/>
+        <CollectionView ItemsSource="{Binding Subjects}" HeightRequest="160">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:CourseSubjectDto">
+                    <Label Padding="8" Text="{Binding SubjectName}"/>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <Button Text="Ir a nómina y PIE" Command="{Binding OpenRosterCommand}"/>
+        <Button Text="Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}"/>
+    </VerticalStackLayout>
+</ContentPage>

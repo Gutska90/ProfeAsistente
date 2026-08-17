@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Documents"
+             x:Class="AppEducativa.Maui.Views.Documents.EducationalDocumentGenerationPage"
+             x:DataType="vm:EducationalDocumentGenerationViewModel"
+             Title="Generar material">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="{Binding MensajeEstado}" FontSize="13" LineBreakMode="WordWrap" />
+            <Label Text="Contexto curricular" FontAttributes="Bold" />
+            <Label Text="{Binding ContextoCurricular}" FontSize="12" TextColor="#444" LineBreakMode="WordWrap" />
+
+            <Label Text="Tipo" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding TiposDocumento}" SelectedItem="{Binding DocumentType}" />
+            <Label Text="Dificultad" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding Dificultades}" SelectedItem="{Binding Difficulty}" />
+            <Label Text="Cantidad de ítems" />
+            <Entry Text="{Binding ItemCount}" Keyboard="Numeric" />
+            <Label Text="Duración estimada (min)" />
+            <Entry Text="{Binding EstimatedDurationMinutes}" Keyboard="Numeric" />
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeAnswerKey}" />
+                <Label Text="Incluir clave" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeFeedback}" />
+                <Label Text="Incluir retroalimentación" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeScoring}" />
+                <Label Text="Incluir puntaje" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Label Text="Instrucciones del profesor" />
+            <Editor Text="{Binding TeacherInstructions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+
+            <FlexLayout Wrap="Wrap">
+                <Button Text="Generar"
+                        Command="{Binding GenerarCommand}"
+                        IsEnabled="{Binding CanGenerate}"
+                        BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Cancelar" Command="{Binding CancelarCommand}" Margin="0,0,8,8" />
+            </FlexLayout>
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

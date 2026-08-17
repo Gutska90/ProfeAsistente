@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.NuevaPlanificacionPage"
+             x:DataType="vm:NuevaPlanificacionViewModel"
+             Title="Nueva planificación">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+            <Label Text="Nueva unidad" Style="{StaticResource TitleLabel}" />
+            <Label Text="Toque un ítem de cada lista (en Mac el menú desplegable no muestra bien todas las opciones). El catálogo cubre NT1 a 4° medio."
+                   Style="{StaticResource CaptionLabel}" />
+
+            <Label Text="1. Nivel" Style="{StaticResource SectionLabel}" Margin="0" />
+            <CollectionView ItemsSource="{Binding Niveles}" SelectedItem="{Binding NivelSeleccionado}"
+                            SelectionMode="Single" HeightRequest="140">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:NivelDto">
+                        <Label Text="{Binding Nombre}" Padding="10,8"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="2. Asignatura" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Asignaturas}" SelectedItem="{Binding AsignaturaSeleccionada}"
+                            SelectionMode="Single" HeightRequest="140">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:AsignaturaDto">
+                        <Label Text="{Binding Nombre}" Padding="10,8"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="3. Unidad" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Unidades}" SelectedItem="{Binding UnidadSeleccionada}"
+                            SelectionMode="Single" HeightRequest="140">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:UnidadDto">
+                        <Label Text="{Binding NombreMostrar}" Padding="10,8" LineBreakMode="TailTruncation"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Label Text="{Binding UnidadSeleccionada.Descripcion}" Style="{StaticResource CaptionLabel}" />
+
+            <Label Text="4. Curso (para nómina y asistencia)" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Cursos}" SelectedItem="{Binding CursoSeleccionado}"
+                            SelectionMode="Single" HeightRequest="88">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:SchoolCourseDto">
+                        <Label Text="{Binding DisplayName}" Padding="10,8"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Label Text="Si no elige curso, la asistencia no podrá cargar la nómina. Créelo en Cursos si la lista está vacía."
+                   Style="{StaticResource CaptionLabel}"/>
+
+            <Label Text="Nombre (opcional)" FontAttributes="Bold" />
+            <Entry Text="{Binding Nombre}" Placeholder="Ej: Planificación Unidad Fracciones" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Fecha inicio" FontAttributes="Bold" />
+                    <DatePicker Date="{Binding FechaInicio}" />
+                </VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <Label Text="Fecha fin" FontAttributes="Bold" />
+                    <DatePicker Date="{Binding FechaFin}" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <Button Text="Crear planificación" Command="{Binding CrearCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

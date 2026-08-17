@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.PlanificacionListPage"
+             x:DataType="vm:PlanificacionListViewModel"
+             Title="Planificaciones">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20" RowSpacing="14">
+        <VerticalStackLayout Spacing="8">
+            <Label Text="Unidades" Style="{StaticResource TitleLabel}" />
+            <Label Text="OA, Bloom e Inicio / Desarrollo / Cierre, clase a clase."
+                   Style="{StaticResource CaptionLabel}" />
+            <Button Text="Nueva planificación" Command="{Binding NuevaCommand}" />
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Planificaciones}" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:PlanificacionResumenDto">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding Nombre}" FontAttributes="Bold" FontSize="16" />
+                            <Label Text="{Binding Asignatura}" />
+                            <Label Text="{Binding Unidad}" Style="{StaticResource CaptionLabel}" />
+                            <Label Text="{Binding CantidadClases, StringFormat='{}{0} clases'}"
+                                   FontSize="12" TextColor="{StaticResource Primary}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}" />
+            <Button Text="Actualizar" Command="{Binding CargarCommand}" Style="{StaticResource GhostButton}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

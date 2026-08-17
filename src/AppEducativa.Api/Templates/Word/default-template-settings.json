@@ -1,0 +1,17 @@
+{
+  "fontFamily": "Aptos",
+  "fallbackFonts": ["Calibri", "Arial"],
+  "bodyFontSize": 11,
+  "titleFontSize": 18,
+  "heading1FontSize": 15,
+  "heading2FontSize": 13,
+  "heading3FontSize": 12,
+  "pageSize": "A4",
+  "orientation": "Portrait",
+  "marginTopCm": 2.0,
+  "marginBottomCm": 2.0,
+  "marginLeftCm": 2.0,
+  "marginRightCm": 2.0,
+  "showBorders": true,
+  "showCurriculumFooter": true
+}

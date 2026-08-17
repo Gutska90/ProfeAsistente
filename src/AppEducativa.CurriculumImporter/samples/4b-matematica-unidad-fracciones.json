@@ -1,0 +1,136 @@
+{
+  "source": {
+    "title": "Programa de Estudio Matemática 4° Básico — Unidad Fracciones (MVP validado)",
+    "url": "https://www.curriculumnacional.cl/",
+    "documentType": "ProgramaEstudio",
+    "version": "2023-mvp"
+  },
+  "level": {
+    "code": "4B",
+    "name": "4° básico",
+    "cycle": "Basica",
+    "order": 6
+  },
+  "subject": {
+    "code": "MAT",
+    "name": "Matemática"
+  },
+  "axes": [
+    {
+      "code": "NUM",
+      "name": "Números y operaciones",
+      "description": "Eje de Números y operaciones según Bases Curriculares 1° a 6° básico."
+    }
+  ],
+  "units": [
+    {
+      "number": 2,
+      "name": "Fracciones",
+      "description": "Fracciones propias, equivalencia, comparación y usos en contextos cotidianos.",
+      "suggestedHours": 20,
+      "learningObjectiveCodes": ["MA04 OA 09", "MA04 OA 10"]
+    },
+    {
+      "number": 1,
+      "name": "Números y operaciones",
+      "description": "Números hasta 10.000 y operatoria.",
+      "suggestedHours": 25,
+      "learningObjectiveCodes": ["MA04 OA 01", "MA04 OA 06"]
+    }
+  ],
+  "learningObjectives": [
+    {
+      "code": "MA04 OA 01",
+      "number": 1,
+      "description": "Representar y describir números del 0 al 10.000.",
+      "axisName": "Números y operaciones",
+      "tipo": "Basal",
+      "esObligatorio": true
+    },
+    {
+      "code": "MA04 OA 06",
+      "number": 6,
+      "description": "Demostrar que comprenden la multiplicación de números de tres dígitos por números de un dígito.",
+      "axisName": "Números y operaciones",
+      "tipo": "Basal",
+      "esObligatorio": true
+    },
+    {
+      "code": "MA04 OA 09",
+      "number": 9,
+      "description": "Demostrar que comprenden las fracciones con denominadores 100, 50, 25, 20, 12, 10, 8, 6, 5, 4, 3, 2.",
+      "axisName": "Números y operaciones",
+      "tipo": "Basal",
+      "esObligatorio": true
+    },
+    {
+      "code": "MA04 OA 10",
+      "number": 10,
+      "description": "Identificar fracciones equivalentes y comparar fracciones en contextos cotidianos.",
+      "axisName": "Números y operaciones",
+      "tipo": "Basal",
+      "esObligatorio": true
+    }
+  ],
+  "evaluationIndicators": [
+    {
+      "learningObjectiveCode": "MA04 OA 01",
+      "description": "Lee, escribe y representa números hasta 10.000 en la recta numérica y con material concreto.",
+      "esSugerido": true,
+      "orden": 1
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 01",
+      "description": "Compara y ordena números hasta 10.000 usando símbolos >, <, =.",
+      "esSugerido": true,
+      "orden": 2
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 06",
+      "description": "Resuelve multiplicaciones de 3 dígitos × 1 dígito con algoritmos y estimación.",
+      "esSugerido": true,
+      "orden": 1
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 09",
+      "description": "Representa fracciones propias con material concreto, dibujos y símbolos.",
+      "esSugerido": true,
+      "orden": 1
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 09",
+      "description": "Identifica el numerador y el denominador y explica su significado.",
+      "esSugerido": true,
+      "orden": 2
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 10",
+      "description": "Reconoce fracciones equivalentes (ej. 1/2 = 2/4) y las justifica.",
+      "esSugerido": true,
+      "orden": 1
+    },
+    {
+      "learningObjectiveCode": "MA04 OA 10",
+      "description": "Compara fracciones con igual denominador o numerador en situaciones cotidianas.",
+      "esSugerido": true,
+      "orden": 2
+    }
+  ],
+  "skills": [
+    { "code": "RES", "description": "Resolver problemas", "axisName": "Números y operaciones" },
+    { "code": "MOD", "description": "Modelar", "axisName": "Números y operaciones" },
+    { "code": "REP", "description": "Representar", "axisName": "Números y operaciones" },
+    { "code": "ARG", "description": "Argumentar y comunicar", "axisName": "Números y operaciones" }
+  ],
+  "attitudes": [
+    { "code": "ACT1", "description": "Demostrar curiosidad e interés por aprender matemáticas." },
+    { "code": "ACT2", "description": "Trabajar en forma rigurosa y perseverante." }
+  ],
+  "transversalObjectives": [
+    {
+      "code": "OAT-4B-01",
+      "dimension": "Proactividad",
+      "description": "Practicar la iniciativa personal y la colaboración en el trabajo escolar."
+    }
+  ]
+}

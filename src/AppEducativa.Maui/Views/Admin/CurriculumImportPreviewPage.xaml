@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Admin"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Admin.CurriculumImportPreviewPage"
+             x:DataType="vm:CurriculumImportPreviewViewModel"
+             Title="Vista previa editable">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="{Binding Estado}" FontSize="18" FontAttributes="Bold" />
+            <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Recargar" Command="{Binding CargarCommand}" />
+                <Button Text="Guardar correcciones" Command="{Binding GuardarCorreccionesCommand}" />
+            </HorizontalStackLayout>
+
+            <Label Text="Unidades" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Unidades}" HeightRequest="100">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:CurriculumUnitPreviewDto">
+                        <HorizontalStackLayout Spacing="8" Padding="0,4">
+                            <Entry Text="{Binding Number}" WidthRequest="60" Keyboard="Numeric" />
+                            <Entry Text="{Binding Name}" HorizontalOptions="FillAndExpand" />
+                        </HorizontalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="OA" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Objetivos}" HeightRequest="160">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:CurriculumObjectivePreviewDto">
+                        <VerticalStackLayout Padding="0,4" Spacing="2">
+                            <Entry Text="{Binding Code}" FontAttributes="Bold" />
+                            <Editor Text="{Binding Description}" AutoSize="TextChanges" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Indicadores" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Indicadores}" HeightRequest="120">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:CurriculumIndicatorPreviewDto">
+                        <VerticalStackLayout Padding="0,4">
+                            <Entry Text="{Binding LearningObjectiveCode}" FontSize="12" />
+                            <Editor Text="{Binding Description}" AutoSize="TextChanges" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Habilidades (una por línea)" FontAttributes="Bold" />
+            <Editor Text="{Binding Habilidades}" AutoSize="TextChanges" MinimumHeightRequest="60" />
+            <Label Text="Actitudes (una por línea)" FontAttributes="Bold" />
+            <Editor Text="{Binding Actitudes}" AutoSize="TextChanges" MinimumHeightRequest="60" />
+
+            <Label Text="JSON vista previa" FontAttributes="Bold" />
+            <Editor Text="{Binding PreviewJson}" IsReadOnly="True" AutoSize="TextChanges" MinimumHeightRequest="140" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="AppEducativa.Maui.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:AppEducativa.Maui.Views"
+    xmlns:auth="clr-namespace:AppEducativa.Maui.Views.Auth"
+    xmlns:admin="clr-namespace:AppEducativa.Maui.Views.Admin"
+    xmlns:adminUsers="clr-namespace:AppEducativa.Maui.Views.Admin.Users"
+    xmlns:adminInst="clr-namespace:AppEducativa.Maui.Views.Admin.Institutions"
+    xmlns:adminCourses="clr-namespace:AppEducativa.Maui.Views.Admin.Courses"
+    xmlns:classroom="clr-namespace:AppEducativa.Maui.Views.Classroom"
+    Shell.FlyoutBehavior="Flyout"
+    Title="ProfeAsistente">
+
+    <ShellContent Route="login"
+                  Title="Iniciar sesión"
+                  ContentTemplate="{DataTemplate auth:LoginPage}"
+                  FlyoutItemIsVisible="False" />
+
+    <FlyoutItem x:Name="FlyoutInicio" Title="Inicio" Route="inicio">
+        <ShellContent ContentTemplate="{DataTemplate classroom:TeacherDashboardPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutPlanificaciones" Title="Planificaciones" Route="planificaciones">
+        <ShellContent ContentTemplate="{DataTemplate views:PlanificacionListPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutNuevaPlanificacion" Title="Nueva planificación" Route="nuevaPlanificacionFlyout">
+        <ShellContent ContentTemplate="{DataTemplate views:NuevaPlanificacionPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutNomina" Title="Nómina y PIE" Route="nomina">
+        <ShellContent ContentTemplate="{DataTemplate classroom:CourseRosterPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutPerfil" Title="Perfil" Route="perfil">
+        <ShellContent ContentTemplate="{DataTemplate auth:UserProfilePage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutUsuarios" Title="Usuarios" Route="adminUsers">
+        <ShellContent ContentTemplate="{DataTemplate adminUsers:UserListPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutEstablecimientos" Title="Establecimientos" Route="adminInstitutions">
+        <ShellContent ContentTemplate="{DataTemplate adminInst:InstitutionListPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutCursos" Title="Cursos" Route="adminCourses">
+        <ShellContent ContentTemplate="{DataTemplate adminCourses:CourseListPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutCurriculum" Title="Administrar currículum" Route="adminCurriculum">
+        <ShellContent ContentTemplate="{DataTemplate views:AdministrarCurriculumPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutFuentes" Title="Fuentes curriculares" Route="adminSources">
+        <ShellContent ContentTemplate="{DataTemplate admin:CurriculumSourcesPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem x:Name="FlyoutLotes" Title="Lotes de importación" Route="adminImports">
+        <ShellContent ContentTemplate="{DataTemplate admin:CurriculumImportsPage}" />
+    </FlyoutItem>
+
+</Shell>

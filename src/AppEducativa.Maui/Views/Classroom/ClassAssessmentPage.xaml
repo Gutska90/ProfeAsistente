@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Classroom"
+             xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
+             x:Class="AppEducativa.Maui.Views.Classroom.ClassAssessmentPage"
+             x:DataType="vm:ClassAssessmentViewModel"
+             Title="Evaluación">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label Text="Evaluación de la clase" Style="{StaticResource TitleLabel}"/>
+            <Label Style="{StaticResource CaptionLabel}"
+                   Text="Formativa o sumativa alineada al OA. Registro de apoyo; no reemplaza el libro de clases."/>
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Nueva" FontAttributes="Bold"/>
+                    <Entry Text="{Binding NewName}" Placeholder="Nombre (ticket de salida, prueba, etc.)"/>
+                    <Picker ItemsSource="{Binding PurposeNames}" SelectedItem="{Binding PurposeName}"/>
+                    <Editor Text="{Binding Criteria}" HeightRequest="70" Placeholder="Criterios / indicadores"/>
+                    <Button Text="Crear evaluación" Command="{Binding CreateCommand}"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="De esta clase" Style="{StaticResource SectionLabel}"/>
+            <CollectionView ItemsSource="{Binding Assessments}" SelectedItem="{Binding Selected}"
+                            SelectionMode="Single" HeightRequest="120">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:LearningAssessmentDto">
+                        <VerticalStackLayout Padding="6">
+                            <Label Text="{Binding Name}" FontAttributes="Bold"/>
+                            <Label Text="{Binding Date, StringFormat='{0:dd/MM/yyyy}'}" FontSize="12" TextColor="#555"/>
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Puntajes de la nómina" FontAttributes="Bold"/>
+            <CollectionView ItemsSource="{Binding Scores}" HeightRequest="280">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ScoreRow">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding Name}" FontAttributes="Bold"/>
+                                <Entry Placeholder="Puntaje (opcional)" Keyboard="Numeric" Text="{Binding ScoreText}"/>
+                                <Picker ItemsSource="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AchievementLevels}"
+                                        SelectedItem="{Binding AchievementLevel}"/>
+                                <Entry Placeholder="Retroalimentación" Text="{Binding Feedback}"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Guardar puntajes" Command="{Binding SaveScoresCommand}"/>
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

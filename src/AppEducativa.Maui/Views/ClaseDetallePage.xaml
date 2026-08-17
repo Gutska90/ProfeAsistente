@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels"
+             x:Class="AppEducativa.Maui.Views.ClaseDetallePage"
+             x:DataType="vm:ClaseDetalleViewModel"
+             Title="Clase">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+            <HorizontalStackLayout Spacing="10">
+                <Border BackgroundColor="{Binding ChipColor}" Padding="10,4" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 8">
+                    <Label Text="{Binding NivelBloomSeleccionado}" TextColor="White" FontAttributes="Bold" />
+                </Border>
+                <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <Label Text="Objetivo de aprendizaje" Style="{StaticResource SectionLabel}" Margin="0" />
+            <Picker ItemsSource="{Binding Objetivos}"
+                    ItemDisplayBinding="{Binding Codigo}"
+                    SelectedItem="{Binding OaSeleccionado}" />
+            <Label Text="{Binding OaSeleccionado.Descripcion}" Style="{StaticResource CaptionLabel}" />
+
+            <Label Text="Nivel Bloom" Style="{StaticResource SectionLabel}" />
+            <Picker ItemsSource="{Binding NivelesBloom}" SelectedItem="{Binding NivelBloomSeleccionado}" />
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Indicadores" FontAttributes="Bold" />
+                    <Label Text="{Binding IndicadoresTexto}" Style="{StaticResource CaptionLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                <Button Text="Guardar" Command="{Binding GuardarClaseCommand}" />
+                <Button Grid.Column="1" Text="Clase realizada" Command="{Binding CompletarClaseCommand}" />
+                <Button Grid.Row="1" Text="Asistencia" Command="{Binding AbrirAsistenciaCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Grid.Row="1" Grid.Column="1" Text="Evaluación" Command="{Binding AbrirEvaluacionCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button Text="Estructura" Command="{Binding ConfigurarGenerarEstructuraCommand}"
+                        Style="{StaticResource GhostButton}" />
+                <Button Grid.Column="1" Text="Materiales" Command="{Binding AbrirMaterialesEducativosCommand}"
+                        Style="{StaticResource GhostButton}" />
+            </Grid>
+            <Label Text="{Binding EstructuraEstado}" Style="{StaticResource CaptionLabel}"
+                   IsVisible="{Binding TieneEstructuraAvanzada}" />
+            <Label Text="Requiere revisión humana" TextColor="#C62828" FontAttributes="Bold" FontSize="12"
+                   IsVisible="{Binding EstructuraRequiereRevision}" />
+            <Label Text="Estructura desactualizada" TextColor="#E65100" FontAttributes="Bold" FontSize="12"
+                   IsVisible="{Binding EstructuraDesactualizada}" />
+
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="DUA en esta clase" FontAttributes="Bold" />
+                    <Label Style="{StaticResource CaptionLabel}"
+                           Text="Participación, representación o acción y expresión (Decreto 83)."/>
+                    <CollectionView ItemsSource="{Binding DuaStrategies}" HeightRequest="100">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DuaStrategyRow">
+                                <VerticalStackLayout Padding="0,4">
+                                    <Label Text="{Binding PrincipleName}" FontAttributes="Bold" FontSize="12"/>
+                                    <Label Text="{Binding Strategy}" Style="{StaticResource CaptionLabel}"/>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Picker ItemsSource="{Binding DuaPrincipleNames}" SelectedItem="{Binding DuaPrincipleSeleccionado}"/>
+                    <Editor Text="{Binding DuaEstrategia}" Placeholder="Estrategia DUA de hoy" HeightRequest="64"/>
+                    <Button Text="Agregar DUA" Command="{Binding AgregarDuaCommand}"
+                            Style="{StaticResource SecondaryButton}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Momentos de la clase" Style="{StaticResource SectionLabel}" />
+            <Label Text="Inicio" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding DescripcionInicio}" AutoSize="TextChanges" MinimumHeightRequest="72" />
+            <Label Text="Desarrollo" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding DescripcionDesarrollo}" AutoSize="TextChanges" MinimumHeightRequest="88" />
+            <Label Text="Cierre" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding DescripcionCierre}" AutoSize="TextChanges" MinimumHeightRequest="72" />
+
+            <Button Text="Herramientas avanzadas" Command="{Binding ToggleHerramientasCommand}"
+                    Style="{StaticResource GhostButton}" />
+            <VerticalStackLayout Spacing="10" IsVisible="{Binding MostrarHerramientasAvanzadas}">
+                <Label Text="Exportar, generar estructura rápida y material legado." Style="{StaticResource CaptionLabel}" />
+                <Button Text="Ver estructura avanzada" Command="{Binding VerEstructuraActualCommand}"
+                        IsVisible="{Binding TieneEstructuraAvanzada}" Style="{StaticResource SecondaryButton}" />
+                <Button Text="Generar estructura rápida" Command="{Binding GenerarEstructuraCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Text="Exportar clase DOCX" Command="{Binding ExportarClaseDocxCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Text="Generar guía" Command="{Binding GenerarDocumentoEducativoCommand}"
+                        CommandParameter="LearningGuide" Style="{StaticResource SecondaryButton}" />
+                <Button Text="Generar ejercicios" Command="{Binding GenerarDocumentoEducativoCommand}"
+                        CommandParameter="Exercises" Style="{StaticResource SecondaryButton}" />
+                <Button Text="Generar prueba" Command="{Binding GenerarDocumentoEducativoCommand}"
+                        CommandParameter="Assessment" Style="{StaticResource SecondaryButton}" />
+                <HorizontalStackLayout Spacing="12">
+                    <CheckBox IsChecked="{Binding GenerarGuia}" />
+                    <Label Text="Guía legado" VerticalOptions="Center" />
+                    <CheckBox IsChecked="{Binding GenerarEjercicios}" />
+                    <Label Text="Ejercicios" VerticalOptions="Center" />
+                    <CheckBox IsChecked="{Binding GenerarPrueba}" />
+                    <Label Text="Prueba" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Button Text="Generar material legado" Command="{Binding GenerarMaterialCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Text="Guardar material legado" Command="{Binding GuardarMaterialCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Text="Exportar Word legado" Command="{Binding ExportarMaterialCommand}"
+                        Style="{StaticResource SecondaryButton}" />
+                <CollectionView ItemsSource="{Binding ItemsEditables}"
+                                IsVisible="{Binding MostrarEditorMaterial}" HeightRequest="220">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EditableItemViewModel">
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding TituloItem}" FontAttributes="Bold" />
+                                    <Editor Text="{Binding Enunciado}" AutoSize="TextChanges" HeightRequest="56" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Editor Text="{Binding ContenidoEditable}" Placeholder="Vista previa del material..."
+                        IsVisible="{Binding MostrarEditorMaterial}" HeightRequest="100" />
+            </VerticalStackLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

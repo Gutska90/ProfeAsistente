@@ -1,0 +1,14 @@
+[
+  {
+    "id": "matematica-4-basico-programa",
+    "nombre": "Programa de Estudio Matemática 4° Básico",
+    "url": "https://www.curriculumnacional.cl/614/articles-18979_programa.pdf",
+    "dominioPermitido": "www.curriculumnacional.cl",
+    "tipoFuente": "ProgramaEstudio",
+    "formato": "Pdf",
+    "nivelCodigo": "4B",
+    "asignaturaCodigo": "MAT",
+    "activo": true,
+    "intervaloSolicitudesMs": 1500
+  }
+]

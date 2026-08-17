@@ -1,0 +1,31 @@
+{
+  "sourceId": "matematica-4-basico-programa",
+  "targetUnitNumber": 1,
+  "pageRange": {
+    "start": 55,
+    "end": 77
+  },
+  "unitHeadingPatterns": [
+    "Unidad\\s+(?<number>[1-4])(?!\\d)\\s*PROP[ÓO]SITO",
+    "Unidad\\s+(?<number>[1-4])(?!\\d)(?=OBJETIVOS|OA\\d)",
+    "Unidad\\s+(?<number>[1-4])(?!\\d)\\b"
+  ],
+  "learningObjectivePatterns": [
+    "(?<![A-Za-z_])OA\\s*_?(?<number>\\d{1,2})\\s*(?<description>[A-ZÁÉÍÓÚÑ][^\\n]{15,})"
+  ],
+  "indicatorHeadingPatterns": [
+    "INDICADORES?\\s+DE\\s+EVALUACI[ÓO]N"
+  ],
+  "skillsHeadings": [
+    "HABILIDADES"
+  ],
+  "attitudesHeadings": [
+    "ACTITUDES"
+  ],
+  "stopUnitPatterns": [
+    "Unidad\\s+2(?!\\d)\\s*PROP[ÓO]SITO",
+    "Unidad\\s+2(?!\\d)(?=OBJETIVOS|OA\\d)"
+  ],
+  "hoursPattern": "Tiempo estimado\\s*(?<hours>\\d+)\\s*horas",
+  "normalizeOaPrefix": "OA"
+}
