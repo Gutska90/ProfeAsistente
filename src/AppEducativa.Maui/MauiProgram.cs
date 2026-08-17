@@ -96,6 +96,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ClassStructureGenerationViewModel>();
         builder.Services.AddTransient<ClassStructureEditorViewModel>();
         builder.Services.AddTransient<EducationalDocumentListViewModel>();
+        builder.Services.AddTransient<MaterialLibraryViewModel>();
         builder.Services.AddTransient<EducationalDocumentGenerationViewModel>();
         builder.Services.AddTransient<EducationalDocumentEditorViewModel>();
         builder.Services.AddTransient<EducationalItemEditorViewModel>();
@@ -152,6 +153,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ClassStructureGenerationPage>();
         builder.Services.AddTransient<ClassStructureEditorPage>();
         builder.Services.AddTransient<EducationalDocumentListPage>();
+        builder.Services.AddTransient<MaterialLibraryPage>();
         builder.Services.AddTransient<EducationalDocumentGenerationPage>();
         builder.Services.AddTransient<EducationalDocumentEditorPage>();
         builder.Services.AddTransient<EducationalItemEditorPage>();

@@ -94,15 +94,20 @@ public partial class AppShell : Shell
             auth.Roles.Contains(nameof(ApplicationRole.SystemAdministrator))
             || auth.Permissions.Contains(permission);
 
-        FlyoutInicio.FlyoutItemIsVisible = signedIn;
+        FlyoutHoy.FlyoutItemIsVisible = signedIn;
         FlyoutPlanificaciones.FlyoutItemIsVisible = signedIn
             && (Has(AppPermissions.PlanningViewOwn) || Has(AppPermissions.PlanningViewInstitution));
+        FlyoutBiblioteca.FlyoutItemIsVisible = signedIn
+            && (Has(AppPermissions.MaterialsEditOwn) || Has(AppPermissions.MaterialsGenerate)
+                || Has(AppPermissions.PlanningViewOwn) || Has(AppPermissions.ClassroomView));
         FlyoutNuevaPlanificacion.FlyoutItemIsVisible = false;
-        FlyoutNomina.FlyoutItemIsVisible = signedIn && Has(AppPermissions.ClassroomView);
+        FlyoutNomina.FlyoutItemIsVisible = false;
         FlyoutPerfil.FlyoutItemIsVisible = signedIn;
+        // Administración: fuera del MVP docente; solo roles con permiso explícito.
         FlyoutUsuarios.FlyoutItemIsVisible = signedIn && Has(AppPermissions.UsersView);
         FlyoutEstablecimientos.FlyoutItemIsVisible = signedIn && Has(AppPermissions.InstitutionsView);
-        FlyoutCursos.FlyoutItemIsVisible = signedIn && Has(AppPermissions.CoursesView);
+        FlyoutCursos.FlyoutItemIsVisible = signedIn
+            && (Has(AppPermissions.CoursesView) || Has(AppPermissions.ClassroomView));
         var curriculumAdmin = Has(AppPermissions.CurriculumImport)
             || Has(AppPermissions.CurriculumReview)
             || Has(AppPermissions.CurriculumApprove)

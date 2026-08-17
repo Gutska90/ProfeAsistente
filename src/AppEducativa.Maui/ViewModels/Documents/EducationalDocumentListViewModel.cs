@@ -36,8 +36,8 @@ public partial class EducationalDocumentListViewModel : ObservableObject
             foreach (var d in await _api.GetEducationalDocumentsAsync(id))
                 Documentos.Add(d);
             MensajeEstado = Documentos.Count == 0
-                ? "Sin materiales educativos aún."
-                : $"{Documentos.Count} material(es).";
+                ? "Sin materiales aún. Use Crear guía / actividad / prueba."
+                : $"{Documentos.Count} material(es) en esta clase.";
         }
         catch (Exception ex)
         {

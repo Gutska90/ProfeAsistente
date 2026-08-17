@@ -1,6 +1,6 @@
 # Desarrollo por etapas
 
-Regla: **una etapa activa a la vez**. No abrir sync nube, pulido total de UI, SIGE ni más módulos de aula hasta cerrar la etapa en curso.
+Regla: **una etapa activa a la vez**. No abrir sync nube, SIGE ni ERP escolar hasta cerrar la etapa en curso.
 
 Cada etapa termina cuando:
 
@@ -9,31 +9,25 @@ Cada etapa termina cuando:
 3. Hay un flujo usable en MAUI o API documentado.
 4. Se anota qué quedó fuera.
 
-No lanzar API, MAUI y pruebas en paralelo de forma indiscriminada: un cambio de dominio → migración → API → una pantalla → pruebas → parar.
-
 ## Ya cerrado (no reabrir salvo bugs)
 
 | Etapa | Qué quedó |
 |-------|-----------|
-| A. Currículum | Importar, revisar, publicar OA |
-| B. Planificación | Plan, clases, calendario, secuencia, cobertura |
-| C. Materiales | Estructura, guías, pruebas, DOCX |
-| D. Seguridad | Usuarios, JWT, establecimientos, cursos |
-| E. Aula local | Nómina, PIE/DUA, asistencia, completar clase, dashboard |
-| 1. Flujo diario | Inscripción al curso, DUA en ficha de clase, asistencia desde nómina, menú por permiso |
-| 2. Calendario usable | Vista mes/semana (lunes–domingo), abrir clase, reprogramar al día elegido |
-| 3. Evaluación en clase | Formativa/sumativa desde la ficha, puntajes y nivel de logro de la nómina |
-| 4. Interfaz docente | Tipografía, color, tarjetas y menos botones en el flujo diario |
-| 5. Offline / cola | Caché de lectura + outbox FIFO hacia la API local. Sin sync entre dispositivos ni nube |
+| A–E, 1–5 | Currículum, planificación, materiales, seguridad, aula, calendario, evaluación, UI, offline |
+| **P0** | Navegación Hoy / Mis cursos / Planificaciones / Configuración |
+| **P1** | Clase hub Copilot |
+| **P2** | Biblioteca + lenguaje UI |
+| **P3** | Evaluación + evidencia por OA → refuerzo |
+| **P4** | README, `IAiProvider`, CORS por ambiente, Documento legado deprecado |
 
 ## Cola
 
-No hay etapa siguiente en cola.
+No hay etapa P5 en la cola actual. Siguientes temas solo si se acuerdan explícitamente (rename de solución, migración de datos legado, etc.).
 
-### Fuera de cola (no implementar)
+### Fuera de cola
 
-SIGE, libro de clases legal, PME ministerial, DocenteMás, pagos, tiendas, colaboración en tiempo real, sync nube / multi-dispositivo.
+SIGE, libro legal, PME ministerial, DocenteMás, pagos, tiendas, sync nube, ERP escolar (Lirmi/Napsis).
 
 ## Cómo pedir trabajo
 
-Si aparece un bug de una etapa cerrada, descríbalo. No pedir “haz el 100%” ni varias etapas juntas.
+Indique el objetivo concreto (bug, mejora de producto o limpieza adicional). Las etapas P0–P4 están cerradas.

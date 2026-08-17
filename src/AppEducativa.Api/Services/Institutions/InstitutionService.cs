@@ -274,16 +274,21 @@ public sealed class InstitutionService : IInstitutionService
     public async Task<IReadOnlyList<SchoolCourseDto>> ListCoursesAsync(Guid institutionId, CancellationToken cancellationToken = default)
     {
         EnsureInstitutionAccess(institutionId);
-        return await _db.SchoolCourses.AsNoTracking()
+        var list = await _db.SchoolCourses.AsNoTracking()
+            .Include(c => c.Level)
+            .Include(c => c.Subjects).ThenInclude(s => s.Subject)
             .Where(c => c.InstitutionId == institutionId && !c.IsDeleted)
             .OrderBy(c => c.DisplayName)
-            .Select(c => MapCourse(c))
             .ToListAsync(cancellationToken);
+        return list.Select(MapCourse).ToList();
     }
 
     public async Task<SchoolCourseDto?> GetCourseAsync(Guid courseId, CancellationToken cancellationToken = default)
     {
-        var course = await _db.SchoolCourses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId && !c.IsDeleted, cancellationToken);
+        var course = await _db.SchoolCourses.AsNoTracking()
+            .Include(c => c.Level)
+            .Include(c => c.Subjects).ThenInclude(s => s.Subject)
+            .FirstOrDefaultAsync(c => c.Id == courseId && !c.IsDeleted, cancellationToken);
         if (course is null) return null;
         EnsureInstitutionAccess(course.InstitutionId);
         return MapCourse(course);
@@ -446,6 +451,11 @@ public sealed class InstitutionService : IInstitutionService
         Name = c.Name,
         Section = c.Section,
         DisplayName = c.DisplayName,
+        LevelName = c.Level?.Nombre,
+        PrimarySubjectName = c.Subjects?
+            .Where(s => s.IsActive)
+            .Select(s => s.Subject?.Nombre)
+            .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)),
         IsActive = c.IsActive
     };
 }

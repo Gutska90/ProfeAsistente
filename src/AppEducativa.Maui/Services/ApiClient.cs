@@ -44,6 +44,8 @@ public interface IApiClient
         Guid classId, GenerateEducationalDocumentRequest request, CancellationToken ct = default);
     Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetEducationalDocumentsAsync(
         Guid classId, CancellationToken ct = default);
+    Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetMaterialLibraryAsync(
+        Guid? courseId = null, string? type = null, string? search = null, CancellationToken ct = default);
     Task<EducationalDocumentDetailDto?> GetEducationalDocumentAsync(Guid documentId, CancellationToken ct = default);
     Task<EducationalDocumentStudentViewDto?> GetEducationalDocumentStudentViewAsync(
         Guid documentId, CancellationToken ct = default);
@@ -148,6 +150,7 @@ public interface IApiClient
     Task<IReadOnlyList<LearningAssessmentDto>> GetAssessmentsAsync(Guid? courseId = null, Guid? classId = null, CancellationToken ct = default);
     Task<IReadOnlyList<AssessmentScoreDto>> GetAssessmentScoresAsync(Guid assessmentId, CancellationToken ct = default);
     Task SaveAssessmentScoresAsync(Guid assessmentId, IReadOnlyList<SaveAssessmentScoreRequest> scores, CancellationToken ct = default);
+    Task<AssessmentEvidenceSummaryDto?> GetAssessmentEvidenceAsync(Guid assessmentId, CancellationToken ct = default);
 }
 
 public class ApiClient : IApiClient
@@ -333,6 +336,18 @@ public class ApiClient : IApiClient
         Guid classId, CancellationToken ct = default)
         => await _http.GetFromJsonAsync<List<EducationalDocumentSummaryDto>>(
                $"api/clases/{classId}/educational-documents", JsonOptions, ct) ?? [];
+
+    public async Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetMaterialLibraryAsync(
+        Guid? courseId = null, string? type = null, string? search = null, CancellationToken ct = default)
+    {
+        var qs = new List<string>();
+        if (courseId is Guid c) qs.Add($"courseId={c}");
+        if (!string.IsNullOrWhiteSpace(type)) qs.Add($"type={Uri.EscapeDataString(type)}");
+        if (!string.IsNullOrWhiteSpace(search)) qs.Add($"q={Uri.EscapeDataString(search)}");
+        var suffix = qs.Count == 0 ? string.Empty : "?" + string.Join("&", qs);
+        return await _http.GetFromJsonAsync<List<EducationalDocumentSummaryDto>>(
+                   $"api/biblioteca/materiales{suffix}", JsonOptions, ct) ?? [];
+    }
 
     public async Task<EducationalDocumentDetailDto?> GetEducationalDocumentAsync(
         Guid documentId, CancellationToken ct = default)
@@ -940,6 +955,14 @@ public class ApiClient : IApiClient
     {
         using var response = await _http.PutAsJsonAsync($"api/evaluaciones/{assessmentId}/puntajes", scores, JsonOptions, ct);
         await EnsureSuccess(response, ct);
+    }
+
+    public async Task<AssessmentEvidenceSummaryDto?> GetAssessmentEvidenceAsync(Guid assessmentId, CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync($"api/evaluaciones/{assessmentId}/evidencia", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        await EnsureSuccess(response, ct);
+        return await response.Content.ReadFromJsonAsync<AssessmentEvidenceSummaryDto>(JsonOptions, ct);
     }
 
     private async Task<ImportSummaryDto> PostImportActionAsync(Guid batchId, string action, CancellationToken ct)

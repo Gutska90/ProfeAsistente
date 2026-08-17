@@ -49,6 +49,12 @@ public partial class ClaseDetalleViewModel : ObservableObject
     [ObservableProperty] private string duaPrincipleSeleccionado = "Representación";
     [ObservableProperty] private string duaEstrategia = string.Empty;
     [ObservableProperty] private bool mostrarHerramientasAvanzadas;
+    [ObservableProperty] private bool mostrarPlanificacion;
+    [ObservableProperty] private bool mostrarAdaptar;
+    [ObservableProperty] private bool mostrarEditarCurriculo;
+    [ObservableProperty] private string tituloClase = "Clase";
+    [ObservableProperty] private string subtituloClase = string.Empty;
+    [ObservableProperty] private string resumenOa = string.Empty;
 
     partial void OnClaseIdChanged(string value)
     {
@@ -58,6 +64,13 @@ public partial class ClaseDetalleViewModel : ObservableObject
 
     partial void OnNivelBloomSeleccionadoChanged(string? value) =>
         ChipColor = BloomChipHelper.ColorFor(value);
+
+    partial void OnOaSeleccionadoChanged(ObjetivoAprendizajeDto? value)
+    {
+        if (value is null) return;
+        ResumenOa = $"OA {value.Codigo}: {value.Descripcion}";
+        _ = RefrescarIndicadoresAsync();
+    }
 
     [RelayCommand]
     public async Task CargarAsync()
@@ -73,6 +86,8 @@ public partial class ClaseDetalleViewModel : ObservableObject
                 return;
             }
 
+            TituloClase = $"Clase {Clase.Numero}";
+            SubtituloClase = $"{Clase.Asignatura} · {Clase.Unidad} · {Clase.Fecha:dd/MM/yyyy}";
             DescripcionInicio = Clase.DescripcionInicio;
             DescripcionDesarrollo = Clase.DescripcionDesarrollo;
             DescripcionCierre = Clase.DescripcionCierre;
@@ -80,6 +95,7 @@ public partial class ClaseDetalleViewModel : ObservableObject
             IndicadoresTexto = Clase.Indicadores.Count == 0
                 ? "(sin indicadores asociados)"
                 : string.Join("\n", Clase.Indicadores.Select(i => "• " + i));
+            ResumenOa = $"OA {Clase.ObjetivoCodigo}: {Clase.ObjetivoDescripcion}";
 
             Objetivos.Clear();
             var oas = await _api.GetObjetivosAsync(Clase.UnidadId);
@@ -94,7 +110,12 @@ public partial class ClaseDetalleViewModel : ObservableObject
             await CargarEstadoEstructuraAsync(id);
             await CargarDuaAsync(id);
 
-            MensajeEstado = $"Clase {Clase.Numero} · {Clase.Fecha:dd/MM/yyyy} · {Clase.ObjetivoCodigo}";
+            // Si aún no hay momentos, abrir el bloque de planificación.
+            MostrarPlanificacion = string.IsNullOrWhiteSpace(Clase.DescripcionInicio)
+                                   && string.IsNullOrWhiteSpace(Clase.DescripcionDesarrollo)
+                                   && string.IsNullOrWhiteSpace(Clase.DescripcionCierre);
+
+            MensajeEstado = Clase.Estado == EstadoClase.Realizada ? "Clase realizada" : "Lista para preparar";
         }
         catch (Exception ex)
         {
@@ -104,6 +125,69 @@ public partial class ClaseDetalleViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private void ToggleEditarCurriculo() => MostrarEditarCurriculo = !MostrarEditarCurriculo;
+
+    [RelayCommand]
+    private void PlanificarClase()
+    {
+        MostrarPlanificacion = true;
+        MostrarAdaptar = false;
+        MensajeEstado = "Edite los momentos o genere Inicio / Desarrollo / Cierre.";
+    }
+
+    [RelayCommand]
+    private async Task CrearGuiaAsync()
+        => await AbrirGeneracionAsync("LearningGuide");
+
+    [RelayCommand]
+    private async Task CrearActividadAsync()
+        => await AbrirGeneracionAsync("Exercises");
+
+    [RelayCommand]
+    private async Task CrearEvaluacionMaterialAsync()
+        => await AbrirGeneracionAsync("Assessment");
+
+    [RelayCommand]
+    private async Task CrearTicketAsync()
+        => await AbrirGeneracionAsync("Assessment", "exitTicket");
+
+    [RelayCommand]
+    private void AdaptarMaterial()
+    {
+        MostrarAdaptar = true;
+        MostrarPlanificacion = false;
+        MensajeEstado = "Elija un atajo de adaptación o registre una estrategia DUA.";
+    }
+
+    [RelayCommand]
+    private async Task AdaptarSimplificarAsync()
+        => await AbrirGeneracionAsync("LearningGuide", "simplify");
+
+    [RelayCommand]
+    private async Task AdaptarAndamiajeAsync()
+        => await AbrirGeneracionAsync("Exercises", "scaffold");
+
+    [RelayCommand]
+    private async Task AdaptarApoyoVisualAsync()
+    {
+        if (!Guid.TryParse(ClaseId, out _)) return;
+        DuaPrincipleSeleccionado = "Representación";
+        DuaEstrategia = "Incluir apoyos visuales (esquemas, pictogramas o ejemplos concretos) para representar el OA.";
+        await AgregarDuaAsync();
+        MostrarAdaptar = true;
+    }
+
+    private async Task AbrirGeneracionAsync(string type, string? intent = null)
+    {
+        if (!Guid.TryParse(ClaseId, out var id)) return;
+        await GuardarSilenciosoAsync();
+        var q = $"educationalDocumentGeneration?id={id}&type={type}";
+        if (!string.IsNullOrWhiteSpace(intent))
+            q += $"&intent={intent}";
+        await Shell.Current.GoToAsync(q);
     }
 
     [RelayCommand]
@@ -122,10 +206,7 @@ public partial class ClaseDetalleViewModel : ObservableObject
 
     [RelayCommand]
     private async Task GenerarDocumentoEducativoAsync(string? tipo)
-    {
-        if (!Guid.TryParse(ClaseId, out var id)) return;
-        await Shell.Current.GoToAsync($"educationalDocumentGeneration?id={id}&type={tipo ?? "Assessment"}");
-    }
+        => await AbrirGeneracionAsync(tipo ?? "Assessment");
 
     [RelayCommand]
     private async Task ExportarClaseDocxAsync()
@@ -304,104 +385,26 @@ public partial class ClaseDetalleViewModel : ObservableObject
     [RelayCommand]
     private async Task GenerarMaterialAsync()
     {
-        if (Clase is null) return;
-        var tipos = new List<TipoDocumento>();
-        if (GenerarGuia) tipos.Add(TipoDocumento.Guia);
-        if (GenerarEjercicios) tipos.Add(TipoDocumento.Ejercicios);
-        if (GenerarPrueba) tipos.Add(TipoDocumento.Prueba);
-        if (tipos.Count == 0)
-        {
-            MensajeEstado = "Marca al menos un tipo de material (Guía recomendada en MVP).";
-            return;
-        }
-
-        try
-        {
-            IsBusy = true;
-            await GuardarSilenciosoAsync();
-            DocumentoDto? ultimo = null;
-            foreach (var tipo in tipos)
-            {
-                MensajeEstado = $"Generando {tipo}...";
-                ultimo = await _api.GenerarMaterialClaseAsync(Clase.Id, new GenerarMaterialClaseRequest
-                {
-                    Tipo = tipo,
-                    CantidadItems = 5,
-                    SoloSeleccionMultiple = tipo == TipoDocumento.Prueba
-                });
-            }
-
-            if (ultimo is not null)
-            {
-                DocumentoActual = ultimo;
-                CargarMaterial(ultimo);
-            }
-
-            Clase = await _api.GetClaseAsync(Clase.Id);
-            MensajeEstado = "Material generado.";
-        }
-        catch (Exception ex)
-        {
-            MensajeEstado = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        if (!Guid.TryParse(ClaseId, out var id)) return;
+        // Unificación P4: el material canónico es EducationalDocument (Guía/Actividad/Prueba).
+        var type = GenerarPrueba ? "Assessment" : GenerarEjercicios ? "Exercises" : "LearningGuide";
+        MensajeEstado = "Abriendo generación de material (flujo actual). El material legado quedó deprecado.";
+        await AbrirGeneracionAsync(type);
     }
 
     [RelayCommand]
     private async Task GuardarMaterialAsync()
     {
-        if (DocumentoActual is null) return;
-        try
-        {
-            IsBusy = true;
-            DocumentoActual = await _api.ActualizarDocumentoAsync(DocumentoActual.Id, new ActualizarDocumentoRequest
-            {
-                ContenidoGenerado = ContenidoEditable,
-                Items = ItemsEditables.Select(i => i.ToDto()).ToList()
-            });
-            MensajeEstado = "Material guardado.";
-        }
-        catch (Exception ex)
-        {
-            MensajeEstado = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        MensajeEstado = "Use el editor de materiales (Biblioteca o Ver materiales de la clase). El editor legado ya no guarda.";
+        await Task.CompletedTask;
     }
 
     [RelayCommand]
     private async Task ExportarMaterialAsync()
     {
-        if (DocumentoActual is null)
-        {
-            MensajeEstado = "No hay material para exportar.";
-            return;
-        }
-
-        try
-        {
-            IsBusy = true;
-            await GuardarMaterialAsync();
-            var (bytes, fileName) = await _api.ExportarDocumentoAsync(DocumentoActual.Id);
-            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "AppEducativa");
-            Directory.CreateDirectory(folder);
-            var dest = Path.Combine(folder, fileName);
-            await File.WriteAllBytesAsync(dest, bytes);
-            MensajeEstado = $"Exportado: {dest}";
-        }
-        catch (Exception ex)
-        {
-            MensajeEstado = $"Error: {ex.Message}";
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        if (!Guid.TryParse(ClaseId, out var id)) return;
+        MensajeEstado = "Exporte desde el material educativo abierto en el editor.";
+        await Shell.Current.GoToAsync($"educationalDocuments?id={id}");
     }
 
     private async Task GuardarSilenciosoAsync()

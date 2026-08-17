@@ -14,6 +14,7 @@ public partial class TeacherDashboardViewModel : ObservableObject
     [ObservableProperty] private TeacherDashboardDto? dashboard;
     [ObservableProperty] private string? mensajeEstado;
     [ObservableProperty] private string? syncStatus;
+    [ObservableProperty] private bool hasTodayClasses;
     [ObservableProperty] private bool isBusy;
 
     [RelayCommand]
@@ -25,7 +26,8 @@ public partial class TeacherDashboardViewModel : ObservableObject
             await _sync.FlushAsync();
             Dashboard = await _sync.GetDashboardAsync();
             SyncStatus = _sync.StatusText;
-            MensajeEstado = Dashboard?.Reminders.FirstOrDefault();
+            HasTodayClasses = Dashboard.TodayClasses.Count > 0;
+            MensajeEstado = Dashboard.InstitutionName;
         }
         catch (Exception ex)
         {
@@ -54,8 +56,11 @@ public partial class TeacherDashboardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task OpenPlanningsAsync() => await Shell.Current.GoToAsync("//planificaciones");
+    private async Task PrepareClassAsync(UpcomingClassDto? item) => await OpenClassAsync(item);
 
     [RelayCommand]
-    private async Task OpenRosterAsync() => await Shell.Current.GoToAsync("//nomina");
+    private async Task OpenCoursesAsync() => await Shell.Current.GoToAsync("//cursos");
+
+    [RelayCommand]
+    private async Task OpenPlanningsAsync() => await Shell.Current.GoToAsync("//planificaciones");
 }

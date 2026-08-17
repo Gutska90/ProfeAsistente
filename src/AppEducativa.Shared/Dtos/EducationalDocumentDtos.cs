@@ -92,6 +92,21 @@ public sealed class EducationalDocumentSummaryDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<string> Warnings { get; set; } = [];
+
+    /// <summary>Etiqueta ES (Guía / Actividad / Prueba).</summary>
+    public string TypeLabel { get; set; } = string.Empty;
+    /// <summary>Etiqueta ES del estado.</summary>
+    public string StatusLabel { get; set; } = string.Empty;
+    public string DifficultyLabel { get; set; } = string.Empty;
+    public int? ClassNumber { get; set; }
+    public DateOnly? ClassDate { get; set; }
+    public Guid? SchoolCourseId { get; set; }
+    public string? CourseName { get; set; }
+    public string? SubjectName { get; set; }
+    public string? UnitName { get; set; }
+    public string? ObjectiveCode { get; set; }
+    /// <summary>Línea de contexto para listas (curso · clase · OA).</summary>
+    public string ContextLine { get; set; } = string.Empty;
 }
 
 public sealed class EducationalDocumentGenerationResultDto

@@ -7,6 +7,7 @@ using AppEducativa.Api.Models.AI;
 using AppEducativa.Api.Models.AI.Responses;
 using AppEducativa.Api.Repositories;
 using AppEducativa.Api.Services;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.DocumentGeneration;
 using AppEducativa.Api.Services.AI.Gemini;
 using AppEducativa.Api.Services.Export;
@@ -218,7 +219,7 @@ public class WordExportServiceTests : IDisposable
             NullLogger<GeminiClient>.Instance);
 
         return new EducationalDocumentGenerationService(
-            _db, gemini,
+            _db, new GeminiAiProvider(gemini),
             new EducationalDocumentContextBuilder(_db, NullLogger<EducationalDocumentContextBuilder>.Instance),
             new EducationalDocumentGenerationValidator(new EducationalItemSimilarityService()),
             Options.Create(new GeminiOptions
@@ -232,7 +233,8 @@ public class WordExportServiceTests : IDisposable
             }),
             Options.Create(new AiUsageOptions()),
             new FakeHostEnv { ContentRootPath = _root },
-            NullLogger<EducationalDocumentGenerationService>.Instance);
+            NullLogger<EducationalDocumentGenerationService>.Instance,
+            new AppEducativa.Api.Tests.TestDoubles.FakeCurrentUserService());
     }
 
     private static string BuildAssessmentJson(Guid oaId, string code, string release, List<Guid> indicatorIds, string secret)

@@ -6,15 +6,28 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AppEducativa.Maui.ViewModels;
 
+[QueryProperty(nameof(CourseIdFilter), "courseId")]
 public partial class PlanificacionListViewModel : ObservableObject
 {
     private readonly LocalApiLauncher _launcher;
     private readonly IOfflineSyncService _sync;
+    private Guid? _courseFilter;
+    private List<PlanificacionResumenDto> _all = [];
 
     public PlanificacionListViewModel(LocalApiLauncher launcher, IOfflineSyncService sync)
     {
         _launcher = launcher;
         _sync = sync;
+    }
+
+    public string CourseIdFilter
+    {
+        get => _courseFilter?.ToString() ?? string.Empty;
+        set
+        {
+            _courseFilter = Guid.TryParse(value, out var id) ? id : null;
+            ApplyFilter();
+        }
     }
 
     public ObservableCollection<PlanificacionResumenDto> Planificaciones { get; } = [];
@@ -54,13 +67,8 @@ public partial class PlanificacionListViewModel : ObservableObject
         try
         {
             IsBusy = true;
-            var list = await _sync.GetPlanificacionesAsync();
-            Planificaciones.Clear();
-            foreach (var p in list) Planificaciones.Add(p);
-            var pending = _sync.PendingCount > 0 ? $" · {_sync.PendingCount} pendiente(s)" : string.Empty;
-            MensajeEstado = Planificaciones.Count == 0
-                ? "Aún no hay planificaciones. Crea una nueva."
-                : $"{Planificaciones.Count} planificación(es){pending}.";
+            _all = (await _sync.GetPlanificacionesAsync()).ToList();
+            ApplyFilter();
         }
         catch (Exception ex)
         {
@@ -72,8 +80,26 @@ public partial class PlanificacionListViewModel : ObservableObject
         }
     }
 
+    private void ApplyFilter()
+    {
+        Planificaciones.Clear();
+        var list = _courseFilter is Guid cid
+            ? _all.Where(p => p.SchoolCourseId == cid)
+            : _all;
+        foreach (var p in list) Planificaciones.Add(p);
+        var pending = _sync.PendingCount > 0 ? $" · {_sync.PendingCount} pendiente(s)" : string.Empty;
+        var scope = _courseFilter is null ? string.Empty : " de este curso";
+        MensajeEstado = Planificaciones.Count == 0
+            ? $"Aún no hay planificaciones{scope}. Crea una nueva."
+            : $"{Planificaciones.Count} planificación(es){scope}{pending}.";
+    }
+
     [RelayCommand]
-    private async Task NuevaAsync() => await Shell.Current.GoToAsync("nuevaPlanificacion");
+    private async Task NuevaAsync()
+    {
+        var q = _courseFilter is Guid cid ? $"?courseId={cid}" : string.Empty;
+        await Shell.Current.GoToAsync($"nuevaPlanificacion{q}");
+    }
 
     [RelayCommand]
     private async Task AbrirAsync(PlanificacionResumenDto? plan)

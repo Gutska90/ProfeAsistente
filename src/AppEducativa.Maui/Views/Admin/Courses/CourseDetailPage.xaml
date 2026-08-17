@@ -6,18 +6,40 @@
              x:Class="AppEducativa.Maui.Views.Admin.Courses.CourseDetailPage"
              x:DataType="vm:CourseDetailViewModel"
              Title="Curso">
-    <VerticalStackLayout Padding="20" Spacing="12">
-        <Label Text="{Binding Course.DisplayName}" Style="{StaticResource TitleLabel}"/>
-        <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
-        <Label Text="Asignaturas del curso" Style="{StaticResource SectionLabel}"/>
-        <CollectionView ItemsSource="{Binding Subjects}" HeightRequest="160">
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="dto:CourseSubjectDto">
-                    <Label Padding="8" Text="{Binding SubjectName}"/>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
-        <Button Text="Ir a nómina y PIE" Command="{Binding OpenRosterCommand}"/>
-        <Button Text="Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}"/>
-    </VerticalStackLayout>
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+            <Label Text="{Binding Course.DisplayName}" Style="{StaticResource TitleLabel}"/>
+            <Label Text="{Binding SubjectsLine}" Style="{StaticResource CaptionLabel}"/>
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+
+            <Label Text="En este curso" Style="{StaticResource SectionLabel}" Margin="0"/>
+            <Button Text="Nueva planificación" Command="{Binding NewPlanningCommand}"/>
+            <Button Text="Planificaciones del curso" Command="{Binding OpenAllPlanningsCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Materiales" Command="{Binding OpenMaterialsCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Estudiantes (nómina y PIE)" Command="{Binding OpenRosterCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Volver a Hoy" Command="{Binding OpenTodayCommand}" Style="{StaticResource GhostButton}"/>
+
+            <Label Text="Planificaciones" Style="{StaticResource SectionLabel}"/>
+            <CollectionView ItemsSource="{Binding Plannings}" SelectionMode="None" HeightRequest="220">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PlanificacionResumenDto">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenPlanningCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Nombre}" FontAttributes="Bold"/>
+                                <Label Text="{Binding Unidad}" Style="{StaticResource CaptionLabel}"/>
+                                <Label Text="{Binding CantidadClases, StringFormat='{}{0} clases'}" FontSize="12" TextColor="{StaticResource Primary}"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}"/>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

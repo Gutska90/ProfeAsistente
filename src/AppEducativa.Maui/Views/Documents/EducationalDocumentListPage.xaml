@@ -5,33 +5,34 @@
              xmlns:dto="clr-namespace:AppEducativa.Shared.Dtos;assembly=AppEducativa.Shared"
              x:Class="AppEducativa.Maui.Views.Documents.EducationalDocumentListPage"
              x:DataType="vm:EducationalDocumentListViewModel"
-             Title="Materiales educativos">
-    <VerticalStackLayout Padding="16" Spacing="10">
-        <Label Text="{Binding MensajeEstado}" FontSize="13" />
-        <FlexLayout Wrap="Wrap">
-            <Button Text="Generar guía" Command="{Binding GenerarCommand}" CommandParameter="LearningGuide" Margin="0,0,8,8" />
-            <Button Text="Generar ejercicios" Command="{Binding GenerarCommand}" CommandParameter="Exercises" Margin="0,0,8,8" />
-            <Button Text="Generar prueba" Command="{Binding GenerarCommand}" CommandParameter="Assessment"
-                    BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
-            <Button Text="Actualizar" Command="{Binding CargarCommand}" Margin="0,0,8,8" />
-        </FlexLayout>
+             Title="Materiales de la clase">
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <Label Text="Materiales de esta clase" Style="{StaticResource TitleLabel}"/>
+        <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+        <Button Text="Crear guía" Command="{Binding GenerarCommand}" CommandParameter="LearningGuide"/>
+        <Button Text="Crear actividad" Command="{Binding GenerarCommand}" CommandParameter="Exercises"
+                Style="{StaticResource SecondaryButton}"/>
+        <Button Text="Crear prueba" Command="{Binding GenerarCommand}" CommandParameter="Assessment"
+                Style="{StaticResource SecondaryButton}"/>
+        <Button Text="Actualizar" Command="{Binding CargarCommand}" Style="{StaticResource GhostButton}"/>
         <CollectionView ItemsSource="{Binding Documentos}">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="dto:EducationalDocumentSummaryDto">
-                    <Border Stroke="#DDD" Padding="12" Margin="0,0,0,8">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,8">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:EducationalDocumentListViewModel}}, Path=AbrirCommand}"
                                 CommandParameter="{Binding .}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{Binding TypeLabel}" FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}"/>
+                                <Label Text="{Binding StatusLabel}" Style="{StaticResource CaptionLabel}"/>
+                            </HorizontalStackLayout>
                             <Label Text="{Binding Title}" FontAttributes="Bold" />
                             <Label FontSize="12" TextColor="#555"
-                                   Text="{Binding DocumentType, StringFormat='Tipo: {0}'}" />
-                            <Label FontSize="12" TextColor="#555"
-                                   Text="{Binding Status, StringFormat='Estado: {0}'}" />
-                            <Label FontSize="12" TextColor="#555"
-                                   Text="{Binding ItemCount, StringFormat='Ítems: {0}'}" />
+                                   Text="{Binding ItemCount, StringFormat='{}{0} ítems'}" />
                             <Label Text="Desactualizado" TextColor="#E65100" FontAttributes="Bold" FontSize="12"
                                    IsVisible="{Binding IsOutdated}" />
                         </VerticalStackLayout>
@@ -39,6 +40,6 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
     </VerticalStackLayout>
 </ContentPage>

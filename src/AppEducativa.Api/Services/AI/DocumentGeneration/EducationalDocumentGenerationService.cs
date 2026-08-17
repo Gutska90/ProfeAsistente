@@ -5,9 +5,12 @@ using AppEducativa.Api.Configuration;
 using AppEducativa.Api.Data;
 using AppEducativa.Api.Models.AI;
 using AppEducativa.Api.Models.AI.Responses;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.Gemini;
+using AppEducativa.Api.Services.Authorization;
 using AppEducativa.Shared.Dtos;
 using AppEducativa.Shared.Enums;
+using AppEducativa.Shared.Ui;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -24,32 +27,35 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
     };
 
     private readonly AppEducativaDbContext _db;
-    private readonly IGeminiClient _gemini;
+    private readonly IAiProvider _ai;
     private readonly EducationalDocumentContextBuilder _contextBuilder;
     private readonly IEducationalDocumentGenerationValidator _validator;
     private readonly GeminiOptions _geminiOptions;
     private readonly AiUsageOptions _usageOptions;
     private readonly IHostEnvironment _env;
     private readonly ILogger<EducationalDocumentGenerationService> _logger;
+    private readonly ICurrentUserService _current;
 
     public EducationalDocumentGenerationService(
         AppEducativaDbContext db,
-        IGeminiClient gemini,
+        IAiProvider ai,
         EducationalDocumentContextBuilder contextBuilder,
         IEducationalDocumentGenerationValidator validator,
         IOptions<GeminiOptions> geminiOptions,
         IOptions<AiUsageOptions> usageOptions,
         IHostEnvironment env,
-        ILogger<EducationalDocumentGenerationService> logger)
+        ILogger<EducationalDocumentGenerationService> logger,
+        ICurrentUserService current)
     {
         _db = db;
-        _gemini = gemini;
+        _ai = ai;
         _contextBuilder = contextBuilder;
         _validator = validator;
         _geminiOptions = geminiOptions.Value;
         _usageOptions = usageOptions.Value;
         _env = env;
         _logger = logger;
+        _current = current;
     }
 
     public async Task<EducationalDocumentGenerationResultDto> GenerateAsync(
@@ -98,7 +104,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             BloomLevel = context.BloomLevel,
             Difficulty = request.Difficulty,
             EstimatedDurationMinutes = request.EstimatedDurationMinutes,
-            Provider = "Gemini",
+            Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
             PromptVersion = context.PromptVersion,
             CurriculumRelease = context.CurriculumRelease,
@@ -130,7 +136,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             DocumentId = document.Id,
             DocumentType = request.DocumentType.ToString(),
             GenerationType = nameof(AiDocumentGenerationType.CompleteDocument),
-            Provider = "Gemini",
+            Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
             StartedAt = DateTime.UtcNow
         };
@@ -144,7 +150,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             var userPrompt = BuildUserPrompt(context);
             PersistPayload(generation.Id, "Requests", userPrompt, isRequest: true, generation);
 
-            var result = await _gemini.GenerateJsonAsync(systemPrompt, userPrompt, null, cancellationToken);
+            var result = await _ai.GenerateJsonAsync(systemPrompt, userPrompt, null, cancellationToken);
             PersistPayload(generation.Id, "Responses", result.Text, isRequest: false, generation);
 
             var generated = Deserialize(result.Text);
@@ -154,7 +160,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
                 _logger.LogWarning("EducationalDocumentResponseRejected Errors={Errors}",
                     string.Join("; ", validation.Errors));
                 var repairPrompt = BuildRepairPrompt(context, result.Text, validation.Errors);
-                var repaired = await _gemini.GenerateJsonAsync(systemPrompt, repairPrompt, null, cancellationToken);
+                var repaired = await _ai.GenerateJsonAsync(systemPrompt, repairPrompt, null, cancellationToken);
                 PersistPayload(generation.Id, "Responses", repaired.Text + "\n---repair---", false, generation);
                 generated = Deserialize(repaired.Text);
                 validation = _validator.Validate(generated, context);
@@ -168,7 +174,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
                         "AiValidationRejected", 422);
                 }
 
-                result = new GeminiGenerationResult
+                result = new AiGenerationResult
                 {
                     Text = repaired.Text,
                     InputTokenCount = (result.InputTokenCount ?? 0) + (repaired.InputTokenCount ?? 0),
@@ -220,30 +226,105 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
     public async Task<IReadOnlyList<EducationalDocumentSummaryDto>> ListByClassAsync(
         Guid classId, CancellationToken cancellationToken = default)
     {
-        var docs = await _db.EducationalDocuments.AsNoTracking()
-            .Where(d => d.ClassId == classId && !d.IsDeleted)
+        var rows = await QuerySummaries()
+            .Where(d => d.ClassId == classId)
             .OrderByDescending(d => d.UpdatedAt)
-            .Select(d => new
-            {
-                d.Id,
-                d.ClassId,
-                d.DocumentType,
-                d.Title,
-                d.Status,
-                d.BloomLevel,
-                d.Difficulty,
-                d.TotalPoints,
-                d.EstimatedDurationMinutes,
-                d.IsCurrentVersion,
-                d.IsOutdated,
-                d.CreatedAt,
-                d.UpdatedAt,
-                d.WarningsJson,
-                ItemCount = d.Items.Count(i => !i.IsDeleted)
-            })
+            .ToListAsync(cancellationToken);
+        return rows.Select(MapSummary).ToList();
+    }
+
+    public async Task<IReadOnlyList<EducationalDocumentSummaryDto>> ListLibraryAsync(
+        Guid? courseId = null,
+        EducationalDocumentType? documentType = null,
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _current.UserId;
+        var inst = _current.ActiveInstitutionId;
+        var isAdmin = _current.IsInRole(nameof(ApplicationRole.SystemAdministrator));
+
+        var plans = _db.Planificaciones.AsNoTracking().Where(p => !p.IsDeleted);
+        if (!isAdmin && userId is Guid uid)
+            plans = plans.Where(p => p.OwnerUserId == uid || (inst != null && p.InstitutionId == inst));
+        if (courseId is Guid cid)
+            plans = plans.Where(p => p.SchoolCourseId == cid);
+
+        var planIds = await plans.Select(p => p.Id).ToListAsync(cancellationToken);
+        var classIds = await _db.Clases.AsNoTracking()
+            .Where(c => planIds.Contains(c.PlanificacionId))
+            .Select(c => c.Id)
             .ToListAsync(cancellationToken);
 
-        return docs.Select(d => new EducationalDocumentSummaryDto
+        var query = QuerySummaries().Where(d => classIds.Contains(d.ClassId));
+        if (documentType is EducationalDocumentType type)
+            query = query.Where(d => d.DocumentType == type);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(d =>
+                d.Title.ToLower().Contains(term)
+                || (d.ObjectiveCode != null && d.ObjectiveCode.ToLower().Contains(term))
+                || (d.CourseName != null && d.CourseName.ToLower().Contains(term))
+                || (d.UnitName != null && d.UnitName.ToLower().Contains(term)));
+        }
+
+        var rows = await query
+            .OrderByDescending(d => d.UpdatedAt)
+            .Take(200)
+            .ToListAsync(cancellationToken);
+        return rows.Select(MapSummary).ToList();
+    }
+
+    private IQueryable<DocumentSummaryRow> QuerySummaries()
+        => from d in _db.EducationalDocuments.AsNoTracking()
+           where !d.IsDeleted
+           join c in _db.Clases.AsNoTracking() on d.ClassId equals c.Id
+           join p in _db.Planificaciones.AsNoTracking() on c.PlanificacionId equals p.Id
+           join na in _db.NivelesAsignaturas.AsNoTracking() on p.NivelAsignaturaId equals na.Id
+           join asig in _db.Asignaturas.AsNoTracking() on na.AsignaturaId equals asig.Id
+           join u in _db.Unidades.AsNoTracking() on p.UnidadId equals u.Id
+           join course in _db.SchoolCourses.AsNoTracking() on p.SchoolCourseId equals course.Id into courseJoin
+           from course in courseJoin.DefaultIfEmpty()
+           select new DocumentSummaryRow
+           {
+               Id = d.Id,
+               ClassId = d.ClassId,
+               DocumentType = d.DocumentType,
+               Title = d.Title,
+               Status = d.Status,
+               BloomLevel = d.BloomLevel,
+               Difficulty = d.Difficulty,
+               TotalPoints = d.TotalPoints,
+               EstimatedDurationMinutes = d.EstimatedDurationMinutes,
+               IsCurrentVersion = d.IsCurrentVersion,
+               IsOutdated = d.IsOutdated,
+               CreatedAt = d.CreatedAt,
+               UpdatedAt = d.UpdatedAt,
+               WarningsJson = d.WarningsJson,
+               ItemCount = d.Items.Count(i => !i.IsDeleted),
+               ClassNumber = c.Numero,
+               ClassDate = c.Fecha,
+               SchoolCourseId = p.SchoolCourseId,
+               CourseName = course != null ? course.DisplayName : null,
+               SubjectName = asig.Nombre,
+               UnitName = u.Nombre,
+               ObjectiveCode = d.ObjectiveCode
+           };
+
+    private static EducationalDocumentSummaryDto MapSummary(DocumentSummaryRow d)
+    {
+        var typeLabel = MaterialUiLabels.Type(d.DocumentType);
+        var statusLabel = d.IsOutdated
+            ? MaterialUiLabels.Status(EducationalDocumentStatus.Outdated)
+            : MaterialUiLabels.Status(d.Status);
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(d.CourseName)) parts.Add(d.CourseName);
+        else if (!string.IsNullOrWhiteSpace(d.SubjectName)) parts.Add(d.SubjectName);
+        parts.Add($"Clase {d.ClassNumber}");
+        if (!string.IsNullOrWhiteSpace(d.UnitName)) parts.Add(d.UnitName);
+        if (!string.IsNullOrWhiteSpace(d.ObjectiveCode)) parts.Add($"OA {d.ObjectiveCode}");
+
+        return new EducationalDocumentSummaryDto
         {
             Id = d.Id,
             ClassId = d.ClassId,
@@ -259,8 +340,45 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             IsOutdated = d.IsOutdated,
             CreatedAt = d.CreatedAt,
             UpdatedAt = d.UpdatedAt,
-            Warnings = DeserializeWarnings(d.WarningsJson)
-        }).ToList();
+            Warnings = DeserializeWarnings(d.WarningsJson),
+            TypeLabel = typeLabel,
+            StatusLabel = statusLabel,
+            DifficultyLabel = MaterialUiLabels.Difficulty(d.Difficulty),
+            ClassNumber = d.ClassNumber,
+            ClassDate = d.ClassDate,
+            SchoolCourseId = d.SchoolCourseId,
+            CourseName = d.CourseName,
+            SubjectName = d.SubjectName,
+            UnitName = d.UnitName,
+            ObjectiveCode = d.ObjectiveCode,
+            ContextLine = string.Join(" · ", parts)
+        };
+    }
+
+    private sealed class DocumentSummaryRow
+    {
+        public Guid Id { get; init; }
+        public Guid ClassId { get; init; }
+        public EducationalDocumentType DocumentType { get; init; }
+        public string Title { get; init; } = string.Empty;
+        public EducationalDocumentStatus Status { get; init; }
+        public string BloomLevel { get; init; } = string.Empty;
+        public ItemDifficulty Difficulty { get; init; }
+        public decimal? TotalPoints { get; init; }
+        public int? EstimatedDurationMinutes { get; init; }
+        public bool IsCurrentVersion { get; init; }
+        public bool IsOutdated { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public DateTime UpdatedAt { get; init; }
+        public string WarningsJson { get; init; } = "[]";
+        public int ItemCount { get; init; }
+        public int ClassNumber { get; init; }
+        public DateOnly ClassDate { get; init; }
+        public Guid? SchoolCourseId { get; init; }
+        public string? CourseName { get; init; }
+        public string? SubjectName { get; init; }
+        public string? UnitName { get; init; }
+        public string? ObjectiveCode { get; init; }
     }
 
     public async Task<EducationalDocumentDetailDto?> GetAsync(
@@ -668,13 +786,13 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             ItemId = item.Id,
             DocumentType = item.Document.DocumentType.ToString(),
             GenerationType = nameof(AiDocumentGenerationType.SingleItem),
-            Provider = "Gemini",
+            Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
             StartedAt = DateTime.UtcNow
         };
         _db.AiUsageRecords.Add(usage);
 
-        var result = await _gemini.GenerateJsonAsync(systemPrompt, userPrompt, null, cancellationToken);
+        var result = await _ai.GenerateJsonAsync(systemPrompt, userPrompt, null, cancellationToken);
         var generated = Deserialize(result.Text);
         var validation = _validator.Validate(generated, context);
         if (!validation.IsValid || generated.Document.Items.Count == 0)
@@ -874,7 +992,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         AiUsageRecord usage,
         GeneratedEducationalDocument generated,
         EducationalDocumentGenerationContext context,
-        GeminiGenerationResult result,
+        AiGenerationResult result,
         long elapsedMs,
         CancellationToken ct)
     {
@@ -986,7 +1104,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         string errorCode,
         string message,
         long elapsedMs,
-        GeminiGenerationResult? result,
+        AiGenerationResult? result,
         CancellationToken ct)
     {
         generation.Status = status;

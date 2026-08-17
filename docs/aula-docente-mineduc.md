@@ -25,4 +25,5 @@ GET/PUT  /api/clases/{id}/asistencia
 POST /api/clases/{id}/completar
 GET/POST /api/evaluaciones
 GET/PUT  /api/evaluaciones/{id}/puntajes
+GET      /api/evaluaciones/{id}/evidencia
 ```

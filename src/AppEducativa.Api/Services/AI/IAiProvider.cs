@@ -1,16 +1,20 @@
-namespace AppEducativa.Api.Services.AI.Gemini;
+namespace AppEducativa.Api.Services.AI;
 
-/// <summary>Cliente HTTP de Gemini. Preferir <see cref="AppEducativa.Api.Services.AI.IAiProvider"/> en servicios de dominio.</summary>
-public interface IGeminiClient
+/// <summary>
+/// Proveedor de IA abstraíble. Hoy: Gemini. Mañana: otro modelo sin reescribir servicios de dominio.
+/// </summary>
+public interface IAiProvider
 {
-    Task<GeminiGenerationResult> GenerateJsonAsync(
+    string ProviderName { get; }
+
+    Task<AiGenerationResult> GenerateJsonAsync(
         string systemInstruction,
         string userPrompt,
         string? jsonSchema,
         CancellationToken cancellationToken);
 }
 
-public sealed class GeminiGenerationResult
+public sealed class AiGenerationResult
 {
     public required string Text { get; init; }
     public int? InputTokenCount { get; init; }

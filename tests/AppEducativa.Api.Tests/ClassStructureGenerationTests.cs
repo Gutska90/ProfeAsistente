@@ -7,6 +7,7 @@ using AppEducativa.Api.Models.AI;
 using AppEducativa.Api.Models.AI.Responses;
 using AppEducativa.Api.Repositories;
 using AppEducativa.Api.Services;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.ClassGeneration;
 using AppEducativa.Api.Services.AI.Gemini;
 using AppEducativa.Shared.Dtos;
@@ -184,7 +185,7 @@ public class ClassStructureGenerationTests : IDisposable
 
         return new ClassStructureGenerationService(
             _db,
-            gemini,
+            new GeminiAiProvider(gemini),
             new ClassGenerationContextBuilder(_db, NullLogger<ClassGenerationContextBuilder>.Instance),
             new ClassGenerationValidator(),
             Options.Create(ValidGeminiOptions()),

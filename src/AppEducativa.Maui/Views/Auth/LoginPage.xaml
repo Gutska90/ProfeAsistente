@@ -7,7 +7,7 @@
              Title="Iniciar sesión">
     <VerticalStackLayout Padding="32" Spacing="16" VerticalOptions="Center" MaximumWidthRequest="420">
         <Label Text="ProfeAsistente" Style="{StaticResource TitleLabel}" HorizontalOptions="Center" FontSize="28"/>
-        <Label Text="Planificación y aula local para el docente" Style="{StaticResource CaptionLabel}"
+        <Label Text="Asistente de trabajo docente basado en el Currículum Nacional" Style="{StaticResource CaptionLabel}"
                HorizontalTextAlignment="Center" HorizontalOptions="Center"/>
         <Entry Placeholder="Usuario o correo" Text="{Binding UserName}" AutomationId="LoginUser"/>
         <Entry Placeholder="Contraseña" IsPassword="True" Text="{Binding Password}" AutomationId="LoginPassword"/>

@@ -62,6 +62,7 @@ public class PlanificacionResumenDto
     public string Nivel { get; set; } = string.Empty;
     public string Asignatura { get; set; } = string.Empty;
     public string Unidad { get; set; } = string.Empty;
+    public Guid? SchoolCourseId { get; set; }
     public DateOnly FechaInicio { get; set; }
     public DateOnly FechaFin { get; set; }
     public EstadoPlanificacion Estado { get; set; }

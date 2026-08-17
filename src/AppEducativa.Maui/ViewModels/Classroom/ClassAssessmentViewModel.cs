@@ -25,14 +25,23 @@ public partial class ClassAssessmentViewModel : ObservableObject
 
     public ObservableCollection<LearningAssessmentDto> Assessments { get; } = [];
     public ObservableCollection<ScoreRow> Scores { get; } = [];
+    public ObservableCollection<AssessmentSpecificationRowDto> SpecRows { get; } = [];
+    public ObservableCollection<string> IndicatorLines { get; } = [];
+    public ObservableCollection<string> SupportStudents { get; } = [];
     public IReadOnlyList<string> PurposeNames { get; } = ["Diagnóstica", "Formativa", "Sumativa"];
     public IReadOnlyList<string> AchievementLevels { get; } = ["Por lograr", "Medianamente logrado", "Logrado"];
 
     [ObservableProperty] private string classId = string.Empty;
     [ObservableProperty] private LearningAssessmentDto? selected;
+    [ObservableProperty] private AssessmentEvidenceSummaryDto? evidence;
     [ObservableProperty] private string newName = "Ticket de salida";
     [ObservableProperty] private string purposeName = "Formativa";
     [ObservableProperty] private string criteria = "Indicadores de evaluación del OA de la clase.";
+    [ObservableProperty] private string oaHeader = string.Empty;
+    [ObservableProperty] private string readingSummary = string.Empty;
+    [ObservableProperty] private string levelCounts = string.Empty;
+    [ObservableProperty] private bool needsReinforcement;
+    [ObservableProperty] private bool hasSpecification;
     [ObservableProperty] private string? mensajeEstado;
 
     partial void OnClassIdChanged(string value)
@@ -51,17 +60,37 @@ public partial class ClassAssessmentViewModel : ObservableObject
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(ClassId, out var id)) return;
-        Assessments.Clear();
-        foreach (var a in await _sync.GetAssessmentsAsync(id))
-            Assessments.Add(a);
-        Selected = Assessments.FirstOrDefault();
-        MensajeEstado = Assessments.Count == 0
-            ? "Cree una evaluación formativa o sumativa alineada al OA de esta clase. No reemplaza el libro oficial."
-            : $"{Assessments.Count} evaluación(es) de esta clase.";
-        if (Selected is not null)
-            await LoadScoresAsync();
-        else
-            Scores.Clear();
+        try
+        {
+            var clase = await _api.GetClaseAsync(id);
+            if (clase is not null)
+            {
+                OaHeader = $"OA {clase.ObjetivoCodigo}: {clase.ObjetivoDescripcion}";
+                if (string.IsNullOrWhiteSpace(Criteria) || Criteria.StartsWith("Indicadores", StringComparison.Ordinal))
+                    Criteria = clase.Indicadores.Count == 0
+                        ? "Indicadores de evaluación del OA de la clase."
+                        : string.Join(" · ", clase.Indicadores.Take(3));
+            }
+
+            Assessments.Clear();
+            foreach (var a in await _sync.GetAssessmentsAsync(id))
+                Assessments.Add(a);
+            Selected = Assessments.FirstOrDefault();
+            MensajeEstado = Assessments.Count == 0
+                ? "Cree una evaluación alineada al OA. Luego registre niveles de logro y lea la evidencia."
+                : $"{Assessments.Count} evaluación(es) de esta clase.";
+            if (Selected is not null)
+                await LoadScoresAsync();
+            else
+            {
+                Scores.Clear();
+                ClearEvidenceUi();
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = ex.Message;
+        }
     }
 
     [RelayCommand]
@@ -82,7 +111,9 @@ public partial class ClassAssessmentViewModel : ObservableObject
             Date = DateOnly.FromDateTime(DateTime.Today),
             Criteria = Criteria
         });
-        MensajeEstado = $"Creada: {created.Name} ({PurposeLabel(created.Purpose)}).";
+        MensajeEstado = $"Creada: {created.Name} ({PurposeLabel(created.Purpose)})"
+                        + (string.IsNullOrWhiteSpace(created.ObjectiveCode) ? "" : $" · OA {created.ObjectiveCode}")
+                        + (created.EducationalDocumentId is null ? "" : " · con tabla de especificaciones.");
         await LoadAsync();
         Selected = Assessments.FirstOrDefault(a => a.Id == created.Id);
     }
@@ -104,10 +135,9 @@ public partial class ClassAssessmentViewModel : ObservableObject
             });
         }
 
+        await RefreshEvidenceAsync();
         if (Scores.Count == 0)
             MensajeEstado = "No hay nómina en el curso. Inscriba estudiantes para registrar puntajes.";
-        else
-            MensajeEstado = $"{Scores.Count} estudiante(s). Niveles: por lograr / medianamente logrado / logrado.";
     }
 
     [RelayCommand]
@@ -132,9 +162,74 @@ public partial class ClassAssessmentViewModel : ObservableObject
             AchievementLevel = r.AchievementLevel,
             Feedback = string.IsNullOrWhiteSpace(r.Feedback) ? null : r.Feedback.Trim()
         }).ToList());
+
+        await RefreshEvidenceAsync();
         MensajeEstado = _sync.PendingCount > 0
-            ? "Puntajes en el dispositivo. Se enviarán al reconectar (no es SIGE)."
-            : "Puntajes guardados (registro local de apoyo, no SIGE).";
+            ? "Puntajes y evidencia en el dispositivo. Se enviarán al reconectar."
+            : NeedsReinforcement
+                ? "Puntajes guardados. La lectura sugiere crear un refuerzo para este OA."
+                : "Puntajes guardados. Evidencia registrada para el OA de la clase.";
+    }
+
+    [RelayCommand]
+    private async Task VerEspecificacionesAsync()
+    {
+        if (Selected?.EducationalDocumentId is not Guid docId)
+        {
+            MensajeEstado = "Esta evaluación no tiene prueba generada con tabla de especificaciones.";
+            return;
+        }
+
+        await Shell.Current.GoToAsync($"assessmentSpecification?documentId={docId}");
+    }
+
+    [RelayCommand]
+    private async Task CrearRefuerzoAsync()
+    {
+        if (!Guid.TryParse(ClassId, out var id)) return;
+        await Shell.Current.GoToAsync($"educationalDocumentGeneration?id={id}&type=Exercises&intent=reinforce");
+    }
+
+    private async Task RefreshEvidenceAsync()
+    {
+        ClearEvidenceUi();
+        if (Selected is null) return;
+        try
+        {
+            Evidence = await _api.GetAssessmentEvidenceAsync(Selected.Id);
+            if (Evidence is null) return;
+
+            ReadingSummary = Evidence.ReadingSummary;
+            LevelCounts =
+                $"Logrado {Evidence.CountLogrado} · Medianamente {Evidence.CountMedianamente} · Por lograr {Evidence.CountPorLograr}";
+            NeedsReinforcement = Evidence.NeedsReinforcement;
+            if (!string.IsNullOrWhiteSpace(Evidence.ObjectiveCode))
+                OaHeader = $"OA {Evidence.ObjectiveCode}: {Evidence.ObjectiveDescription}";
+
+            foreach (var i in Evidence.Indicators)
+                IndicatorLines.Add("• " + i);
+            foreach (var s in Evidence.SpecificationTable)
+                SpecRows.Add(s);
+            HasSpecification = SpecRows.Count > 0 || Evidence.EducationalDocumentId is not null;
+            foreach (var n in Evidence.StudentsNeedingSupport)
+                SupportStudents.Add(n);
+        }
+        catch
+        {
+            // Offline / API antigua: la lectura detallada no está disponible.
+        }
+    }
+
+    private void ClearEvidenceUi()
+    {
+        Evidence = null;
+        ReadingSummary = string.Empty;
+        LevelCounts = string.Empty;
+        NeedsReinforcement = false;
+        HasSpecification = false;
+        IndicatorLines.Clear();
+        SpecRows.Clear();
+        SupportStudents.Clear();
     }
 
     public static string PurposeLabel(EvaluationPurpose purpose) => purpose switch

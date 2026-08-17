@@ -18,6 +18,7 @@ public static class PlanificacionMapper
         Nivel = p.Nivel?.Nombre ?? "",
         Asignatura = NombreAsignatura(p),
         Unidad = p.Unidad is null ? "" : $"{p.Unidad.Numero}. {p.Unidad.Nombre}",
+        SchoolCourseId = p.SchoolCourseId,
         FechaInicio = p.FechaInicio,
         FechaFin = p.FechaFin,
         Estado = p.Estado,

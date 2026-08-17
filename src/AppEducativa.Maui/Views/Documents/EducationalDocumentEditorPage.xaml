@@ -11,10 +11,11 @@
         <VerticalStackLayout Padding="16" Spacing="10">
             <Label Text="{Binding MensajeEstado}" FontSize="13" LineBreakMode="WordWrap" />
             <Label Text="{Binding CurriculumRefs}" FontSize="12" TextColor="#555" />
-            <Label Text="{Binding Status, StringFormat='Estado: {0}'}" FontSize="12" />
+            <Label Text="{Binding TypeLabel, StringFormat='Tipo: {0}'}" FontSize="12"/>
+            <Label Text="{Binding StatusLabel, StringFormat='Estado: {0}'}" FontSize="12"/>
             <Label Text="Este material fue creado con una configuración anterior de la clase."
                    TextColor="#E65100" FontAttributes="Bold" FontSize="12"
-                   IsVisible="{Binding IsOutdated}" />
+                   IsVisible="{Binding IsOutdated}"/>
 
             <Label Text="Título" FontAttributes="Bold" />
             <Entry Text="{Binding Title}" />

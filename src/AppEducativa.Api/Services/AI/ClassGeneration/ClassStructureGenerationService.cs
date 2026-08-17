@@ -6,6 +6,7 @@ using AppEducativa.Api.Data;
 using AppEducativa.Api.Models;
 using AppEducativa.Api.Models.AI;
 using AppEducativa.Api.Models.AI.Responses;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.Gemini;
 using AppEducativa.Shared.Dtos;
 using AppEducativa.Shared.Enums;
@@ -25,7 +26,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
     };
 
     private readonly AppEducativaDbContext _db;
-    private readonly IGeminiClient _gemini;
+    private readonly IAiProvider _ai;
     private readonly ClassGenerationContextBuilder _contextBuilder;
     private readonly ClassGenerationValidator _validator;
     private readonly GeminiOptions _geminiOptions;
@@ -35,7 +36,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
 
     public ClassStructureGenerationService(
         AppEducativaDbContext db,
-        IGeminiClient gemini,
+        IAiProvider ai,
         ClassGenerationContextBuilder contextBuilder,
         ClassGenerationValidator validator,
         IOptions<GeminiOptions> geminiOptions,
@@ -44,7 +45,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         ILogger<ClassStructureGenerationService> logger)
     {
         _db = db;
-        _gemini = gemini;
+        _ai = ai;
         _contextBuilder = contextBuilder;
         _validator = validator;
         _geminiOptions = geminiOptions.Value;
@@ -99,7 +100,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
             ClassId = classId,
             GenerationNumber = nextNumber + 1,
             Status = AiGenerationStatus.Processing,
-            Provider = "Gemini",
+            Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
             PromptVersion = _geminiOptions.PromptVersion,
             CurriculumSnapshotId = context.SnapshotId,
@@ -115,7 +116,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
             Id = Guid.NewGuid(),
             OperationType = "ClassStructure",
             ClassId = classId,
-            Provider = "Gemini",
+            Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
             StartedAt = DateTime.UtcNow
         };
@@ -129,7 +130,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
             var userPrompt = BuildUserPrompt(context);
             PersistPayloadIfEnabled(generation.Id, "Requests", userPrompt, isRequest: true);
 
-            var result = await _gemini.GenerateJsonAsync(
+            var result = await _ai.GenerateJsonAsync(
                 systemPrompt, userPrompt, ClassStructureJsonSchema.Schema, cancellationToken);
 
             PersistPayloadIfEnabled(generation.Id, "Responses", result.Text, isRequest: false);
@@ -144,7 +145,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
                     generation.Id, string.Join("; ", validation.Errors));
 
                 var repairPrompt = BuildRepairPrompt(context, result.Text, validation.Errors);
-                var repaired = await _gemini.GenerateJsonAsync(
+                var repaired = await _ai.GenerateJsonAsync(
                     systemPrompt, repairPrompt, ClassStructureJsonSchema.Schema, cancellationToken);
                 PersistPayloadIfEnabled(generation.Id, "Responses", repaired.Text + "\n---repair---", isRequest: false);
 
@@ -164,7 +165,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
                 }
 
                 _logger.LogInformation("GeminiResponseRepaired GenerationId={Id}", generation.Id);
-                result = new GeminiGenerationResult
+                result = new AiGenerationResult
                 {
                     Text = repaired.Text,
                     InputTokenCount = (result.InputTokenCount ?? 0) + (repaired.InputTokenCount ?? 0),
@@ -542,7 +543,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         AiUsageRecord usage,
         GeneratedClassStructure structure,
         ClassGenerationContext context,
-        GeminiGenerationResult result,
+        AiGenerationResult result,
         long elapsedMs,
         CancellationToken ct)
     {
@@ -608,7 +609,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         string errorCode,
         string message,
         long elapsedMs,
-        GeminiGenerationResult? result,
+        AiGenerationResult? result,
         CancellationToken ct)
     {
         generation.Status = status;

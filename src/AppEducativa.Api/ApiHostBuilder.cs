@@ -4,6 +4,7 @@ using AppEducativa.Api.Data;
 using AppEducativa.Api.Middleware;
 using AppEducativa.Api.Repositories;
 using AppEducativa.Api.Services;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.ClassGeneration;
 using AppEducativa.Api.Services.AI.DocumentGeneration;
 using AppEducativa.Api.Services.AI.Gemini;
@@ -110,6 +111,7 @@ public static class ApiHostBuilder
             client.Timeout = TimeSpan.FromSeconds(90);
         });
         builder.Services.AddScoped<IGeminiClient, GeminiClient>();
+        builder.Services.AddScoped<IAiProvider, GeminiAiProvider>();
         builder.Services.AddScoped<ClassGenerationContextBuilder>();
         builder.Services.AddScoped<ClassGenerationValidator>();
         builder.Services.AddScoped<IClassStructureGenerationService, ClassStructureGenerationService>();
@@ -149,10 +151,38 @@ public static class ApiHostBuilder
             client.Timeout = TimeSpan.FromSeconds(90);
         });
 
+        var corsSection = builder.Configuration.GetSection(CorsOptions.SectionName);
+        builder.Services.Configure<CorsOptions>(corsSection);
+        var corsOpts = corsSection.Get<CorsOptions>() ?? new CorsOptions();
+        var isDev = builder.Environment.IsDevelopment();
+        var allowAny = isDev && !corsOpts.RestrictInDevelopment;
+        var origins = corsOpts.AllowedOrigins
+            .Where(o => !string.IsNullOrWhiteSpace(o))
+            .Select(o => o.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
         builder.Services.AddCors(options =>
         {
-            options.AddDefaultPolicy(policy =>
-                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            options.AddPolicy("ProfeAsistente", policy =>
+            {
+                if (allowAny)
+                {
+                    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                    return;
+                }
+
+                if (origins.Length == 0)
+                {
+                    // Producción sin orígenes: no abrir el navegador a cualquier sitio.
+                    policy.SetIsOriginAllowed(_ => false);
+                    return;
+                }
+
+                policy.WithOrigins(origins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
         });
 
         if (!string.IsNullOrWhiteSpace(urls))
@@ -186,7 +216,7 @@ public static class ApiHostBuilder
             await next();
         });
 
-        app.UseCors();
+        app.UseCors("ProfeAsistente");
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();

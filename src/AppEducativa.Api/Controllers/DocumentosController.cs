@@ -12,9 +12,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AppEducativa.Api.Controllers;
 
+/// <summary>
+/// API legada de <c>Documento</c>. El flujo canónico es
+/// <see cref="EducationalDocumentController"/> (<c>/api/.../educational-documents</c> y biblioteca).
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/documentos")]
+[Obsolete("Use EducationalDocument /api/clases/{id}/educational-documents y /api/biblioteca/materiales.")]
 public class DocumentosController : ControllerBase
 {
     private readonly IDocumentoRepository _repo;
@@ -43,6 +48,8 @@ public class DocumentosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DocumentoDto>> Generar([FromBody] GenerarDocumentoRequest request, CancellationToken ct)
     {
+        Response.Headers.Append("Deprecation", "true");
+        Response.Headers.Append("Link", "</api/biblioteca/materiales>; rel=\"successor-version\"");
         if (request.NivelId == Guid.Empty || request.AsignaturaId == Guid.Empty || request.UnidadId == Guid.Empty)
             return BadRequest(new { error = "NivelId, AsignaturaId y UnidadId son obligatorios." });
 

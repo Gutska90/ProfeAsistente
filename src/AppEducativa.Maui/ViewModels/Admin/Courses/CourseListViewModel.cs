@@ -52,7 +52,7 @@ public partial class CourseListViewModel : ObservableObject
                 Courses.Add(c);
             MensajeEstado = Courses.Count == 0
                 ? "No hay cursos. Cree uno abajo (nivel + letra)."
-                : $"{Courses.Count} curso(s). Toque uno para ver el detalle.";
+                : $"{Courses.Count} curso(s). Toque uno para entrar.";
         }
         catch (Exception ex)
         {

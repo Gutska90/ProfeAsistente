@@ -3,6 +3,7 @@ using System.Text;
 using AppEducativa.Maui.Services;
 using AppEducativa.Shared.Dtos;
 using AppEducativa.Shared.Enums;
+using AppEducativa.Shared.Ui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -25,7 +26,9 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
     [ObservableProperty] private string title = string.Empty;
     [ObservableProperty] private string instructions = string.Empty;
     [ObservableProperty] private string status = string.Empty;
+    [ObservableProperty] private string statusLabel = string.Empty;
     [ObservableProperty] private string documentType = string.Empty;
+    [ObservableProperty] private string typeLabel = string.Empty;
     [ObservableProperty] private string curriculumRefs = string.Empty;
     [ObservableProperty] private decimal? totalPoints;
     [ObservableProperty] private int? duration;
@@ -61,7 +64,7 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
             }
 
             Apply(doc);
-            MensajeEstado = $"{doc.DocumentType} · {doc.Status}";
+            MensajeEstado = $"{TypeLabel} · {StatusLabel}";
         }
         catch (Exception ex)
         {
@@ -89,7 +92,7 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
                 ChangeSummary = "Edición desde MAUI"
             });
             Apply(doc);
-            MensajeEstado = "Documento guardado.";
+            MensajeEstado = "Material guardado.";
         }
         catch (Exception ex)
         {
@@ -272,7 +275,11 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
         Title = doc.Title;
         Instructions = doc.Instructions;
         Status = doc.Status;
+        StatusLabel = doc.IsOutdated
+            ? MaterialUiLabels.Status(EducationalDocumentStatus.Outdated)
+            : MaterialUiLabels.Status(doc.Status);
         DocumentType = doc.DocumentType;
+        TypeLabel = MaterialUiLabels.Type(doc.DocumentType);
         TotalPoints = doc.TotalPoints;
         Duration = doc.EstimatedDurationMinutes;
         IsOutdated = doc.IsOutdated;

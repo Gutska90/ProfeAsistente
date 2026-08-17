@@ -212,7 +212,12 @@ public sealed class SchoolCourseDto
     public string Name { get; init; } = string.Empty;
     public string? Section { get; init; }
     public string DisplayName { get; init; } = string.Empty;
+    public string? LevelName { get; init; }
+    public string? PrimarySubjectName { get; init; }
     public bool IsActive { get; init; }
+    public string Subtitle => string.IsNullOrWhiteSpace(PrimarySubjectName)
+        ? (LevelName ?? Name)
+        : PrimarySubjectName!;
 }
 
 public sealed class CreateCourseSubjectRequest

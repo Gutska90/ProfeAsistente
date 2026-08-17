@@ -7,6 +7,7 @@ using AppEducativa.Api.Models.AI;
 using AppEducativa.Api.Models.AI.Responses;
 using AppEducativa.Api.Repositories;
 using AppEducativa.Api.Services;
+using AppEducativa.Api.Services.AI;
 using AppEducativa.Api.Services.AI.DocumentGeneration;
 using AppEducativa.Api.Services.AI.Gemini;
 using AppEducativa.Shared.Dtos;
@@ -226,7 +227,7 @@ public class EducationalDocumentGenerationTests : IDisposable
 
         return new EducationalDocumentGenerationService(
             _db,
-            gemini,
+            new GeminiAiProvider(gemini),
             new EducationalDocumentContextBuilder(_db, NullLogger<EducationalDocumentContextBuilder>.Instance),
             new EducationalDocumentGenerationValidator(new EducationalItemSimilarityService()),
             Options.Create(new GeminiOptions
@@ -240,7 +241,8 @@ public class EducationalDocumentGenerationTests : IDisposable
             }),
             Options.Create(new AiUsageOptions()),
             new FakeHostEnv { ContentRootPath = _root },
-            NullLogger<EducationalDocumentGenerationService>.Instance);
+            NullLogger<EducationalDocumentGenerationService>.Instance,
+            new AppEducativa.Api.Tests.TestDoubles.FakeCurrentUserService());
     }
 
     private async Task<AppEducativa.Api.Models.Clase> CreateClassAsync()

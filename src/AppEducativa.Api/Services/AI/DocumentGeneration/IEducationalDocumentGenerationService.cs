@@ -1,4 +1,5 @@
 using AppEducativa.Shared.Dtos;
+using AppEducativa.Shared.Enums;
 
 namespace AppEducativa.Api.Services.AI.DocumentGeneration;
 
@@ -11,6 +12,13 @@ public interface IEducationalDocumentGenerationService
 
     Task<IReadOnlyList<EducationalDocumentSummaryDto>> ListByClassAsync(
         Guid classId, CancellationToken cancellationToken = default);
+
+    /// <summary>Biblioteca del docente: materiales de sus planificaciones (filtros opcionales).</summary>
+    Task<IReadOnlyList<EducationalDocumentSummaryDto>> ListLibraryAsync(
+        Guid? courseId = null,
+        EducationalDocumentType? documentType = null,
+        string? search = null,
+        CancellationToken cancellationToken = default);
 
     Task<EducationalDocumentDetailDto?> GetAsync(
         Guid documentId, CancellationToken cancellationToken = default);

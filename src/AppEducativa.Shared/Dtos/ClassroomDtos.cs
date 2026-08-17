@@ -109,6 +109,9 @@ public sealed class LearningAssessmentDto
     public Guid? ClassId { get; init; }
     public Guid? SchoolCourseId { get; init; }
     public Guid? ObjectiveLearningId { get; init; }
+    public Guid? EducationalDocumentId { get; init; }
+    public string? ObjectiveCode { get; init; }
+    public string? ObjectiveDescription { get; init; }
     public string? Criteria { get; init; }
 }
 
@@ -129,27 +132,70 @@ public sealed class SaveAssessmentScoreRequest
     public string? Feedback { get; init; }
 }
 
+/// <summary>Lectura de evidencia de una evaluación alineada al OA (P3).</summary>
+public sealed class AssessmentEvidenceSummaryDto
+{
+    public Guid AssessmentId { get; init; }
+    public string AssessmentName { get; init; } = string.Empty;
+    public Guid? ClassId { get; init; }
+    public Guid? ObjectiveId { get; init; }
+    public string ObjectiveCode { get; init; } = string.Empty;
+    public string ObjectiveDescription { get; init; } = string.Empty;
+    public string PurposeLabel { get; init; } = string.Empty;
+    public int StudentsTotal { get; init; }
+    public int StudentsWithLevel { get; init; }
+    public int CountPorLograr { get; init; }
+    public int CountMedianamente { get; init; }
+    public int CountLogrado { get; init; }
+    public decimal? AverageScore { get; init; }
+    public bool NeedsReinforcement { get; init; }
+    public string ReadingSummary { get; init; } = string.Empty;
+    public IReadOnlyList<string> Indicators { get; init; } = [];
+    public IReadOnlyList<AssessmentSpecificationRowDto> SpecificationTable { get; init; } = [];
+    public Guid? EducationalDocumentId { get; init; }
+    public IReadOnlyList<string> StudentsNeedingSupport { get; init; } = [];
+}
+
 public sealed class TeacherDashboardDto
 {
     public string TeacherName { get; init; } = string.Empty;
+    public string Greeting { get; init; } = string.Empty;
     public string? InstitutionName { get; init; }
+    public DateOnly Today { get; init; }
     public int ActivePlannings { get; init; }
     public int UpcomingClasses { get; init; }
     public int PendingClasses { get; init; }
     public int OpenCoverageAlerts { get; init; }
     public int StudentsWithSupportPlans { get; init; }
+    /// <summary>Clases del día (Chile / reloj local del servidor).</summary>
+    public IReadOnlyList<UpcomingClassDto> TodayClasses { get; init; } = [];
+    /// <summary>Próximas clases (incluye hoy y siguientes).</summary>
     public IReadOnlyList<UpcomingClassDto> NextClasses { get; init; } = [];
+    public IReadOnlyList<TeacherPendingItemDto> PendingItems { get; init; } = [];
     public IReadOnlyList<string> Reminders { get; init; } = [];
+}
+
+public sealed class TeacherPendingItemDto
+{
+    public string Kind { get; init; } = string.Empty;
+    public string Text { get; init; } = string.Empty;
 }
 
 public sealed class UpcomingClassDto
 {
     public Guid ClassId { get; init; }
     public Guid PlanningId { get; init; }
+    public Guid? SchoolCourseId { get; init; }
     public string PlanningName { get; init; } = string.Empty;
+    public string CourseDisplayName { get; init; } = string.Empty;
+    public string SubjectName { get; init; } = string.Empty;
+    public string UnitName { get; init; } = string.Empty;
     public DateOnly Date { get; init; }
     public string ObjectiveCode { get; init; } = string.Empty;
     public string Estado { get; init; } = string.Empty;
+    public string TitleLine => string.IsNullOrWhiteSpace(CourseDisplayName)
+        ? PlanningName
+        : $"{CourseDisplayName} · {SubjectName}".Trim(' ', '·');
 }
 
 public sealed class CourseRosterDto

@@ -4,44 +4,68 @@
              xmlns:vm="clr-namespace:AppEducativa.Maui.ViewModels.Documents"
              x:Class="AppEducativa.Maui.Views.Documents.EducationalDocumentGenerationPage"
              x:DataType="vm:EducationalDocumentGenerationViewModel"
-             Title="Generar material">
+             Title="Crear material">
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10">
-            <Label Text="{Binding MensajeEstado}" FontSize="13" LineBreakMode="WordWrap" />
-            <Label Text="Contexto curricular" FontAttributes="Bold" />
-            <Label Text="{Binding ContextoCurricular}" FontSize="12" TextColor="#444" LineBreakMode="WordWrap" />
+        <VerticalStackLayout Padding="20" Spacing="12">
+            <Label Text="Crear material" Style="{StaticResource TitleLabel}"/>
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}" LineBreakMode="WordWrap"/>
+            <Label Text="Contexto curricular" FontAttributes="Bold"/>
+            <Label Text="{Binding ContextoCurricular}" Style="{StaticResource CaptionLabel}" LineBreakMode="WordWrap"/>
 
-            <Label Text="Tipo" FontAttributes="Bold" />
-            <Picker ItemsSource="{Binding TiposDocumento}" SelectedItem="{Binding DocumentType}" />
-            <Label Text="Dificultad" FontAttributes="Bold" />
-            <Picker ItemsSource="{Binding Dificultades}" SelectedItem="{Binding Difficulty}" />
-            <Label Text="Cantidad de ítems" />
-            <Entry Text="{Binding ItemCount}" Keyboard="Numeric" />
-            <Label Text="Duración estimada (min)" />
-            <Entry Text="{Binding EstimatedDurationMinutes}" Keyboard="Numeric" />
-            <HorizontalStackLayout Spacing="8">
-                <CheckBox IsChecked="{Binding IncludeAnswerKey}" />
-                <Label Text="Incluir clave" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="8">
-                <CheckBox IsChecked="{Binding IncludeFeedback}" />
-                <Label Text="Incluir retroalimentación" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="8">
-                <CheckBox IsChecked="{Binding IncludeScoring}" />
-                <Label Text="Incluir puntaje" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <Label Text="Instrucciones del profesor" />
-            <Editor Text="{Binding TeacherInstructions}" AutoSize="TextChanges" MinimumHeightRequest="70" />
+            <Label Text="Tipo" FontAttributes="Bold"/>
+            <CollectionView ItemsSource="{Binding TiposDocumento}" SelectedItem="{Binding TipoSeleccionado}"
+                            SelectionMode="Single" HeightRequest="48">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border StrokeThickness="1" Stroke="#CCC" Padding="12,8"
+                                StrokeShape="RoundRectangle 8" BackgroundColor="#F7F7F7">
+                            <Label Text="{Binding .}" VerticalOptions="Center"/>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
 
-            <FlexLayout Wrap="Wrap">
-                <Button Text="Generar"
-                        Command="{Binding GenerarCommand}"
-                        IsEnabled="{Binding CanGenerate}"
-                        BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
-                <Button Text="Cancelar" Command="{Binding CancelarCommand}" Margin="0,0,8,8" />
-            </FlexLayout>
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="Dificultad" FontAttributes="Bold"/>
+            <CollectionView ItemsSource="{Binding Dificultades}" SelectedItem="{Binding Difficulty}"
+                            SelectionMode="Single" HeightRequest="48">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border StrokeThickness="1" Stroke="#CCC" Padding="12,8"
+                                StrokeShape="RoundRectangle 8" BackgroundColor="#F7F7F7">
+                            <Label Text="{Binding .}" VerticalOptions="Center"/>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Cantidad de ítems"/>
+            <Entry Text="{Binding ItemCount}" Keyboard="Numeric"/>
+            <Label Text="Duración estimada (min)"/>
+            <Entry Text="{Binding EstimatedDurationMinutes}" Keyboard="Numeric"/>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeAnswerKey}"/>
+                <Label Text="Incluir clave" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeFeedback}"/>
+                <Label Text="Incluir retroalimentación" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeScoring}"/>
+                <Label Text="Incluir puntaje" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <Label Text="Instrucciones del profesor"/>
+            <Editor Text="{Binding TeacherInstructions}" AutoSize="TextChanges" MinimumHeightRequest="70"/>
+
+            <Button Text="Generar" Command="{Binding GenerarCommand}" IsEnabled="{Binding CanGenerate}"/>
+            <Button Text="Cancelar" Command="{Binding CancelarCommand}" Style="{StaticResource GhostButton}"/>
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

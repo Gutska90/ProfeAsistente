@@ -87,6 +87,10 @@ public class ClassroomController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AssessmentScoreDto>>> GetScores(Guid id, CancellationToken ct)
         => Ok(await _classroom.GetScoresAsync(id, ct));
 
+    [HttpGet("api/evaluaciones/{id:guid}/evidencia")]
+    public async Task<ActionResult<AssessmentEvidenceSummaryDto>> Evidence(Guid id, CancellationToken ct)
+        => Ok(await _classroom.GetAssessmentEvidenceAsync(id, ct));
+
     [HttpPut("api/evaluaciones/{id:guid}/puntajes")]
     public async Task<IActionResult> Scores(Guid id, [FromBody] IReadOnlyList<SaveAssessmentScoreRequest> scores, CancellationToken ct)
     {

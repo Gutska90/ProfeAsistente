@@ -1,5 +1,7 @@
 using AppEducativa.Api.Data;
+using AppEducativa.Api.Models;
 using AppEducativa.Api.Models.Classroom;
+using AppEducativa.Api.Models.Planning;
 using AppEducativa.Api.Services.Authorization;
 using AppEducativa.Shared.Dtos;
 using AppEducativa.Shared.Enums;
@@ -26,6 +28,7 @@ public interface IClassroomService
     Task SaveScoresAsync(Guid assessmentId, IReadOnlyList<SaveAssessmentScoreRequest> scores, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AssessmentScoreDto>> GetScoresAsync(Guid assessmentId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LearningAssessmentDto>> ListAssessmentsAsync(Guid? courseId, Guid? classId = null, CancellationToken cancellationToken = default);
+    Task<AssessmentEvidenceSummaryDto> GetAssessmentEvidenceAsync(Guid assessmentId, CancellationToken cancellationToken = default);
 }
 
 public sealed class ClassroomService : IClassroomService
@@ -44,14 +47,24 @@ public sealed class ClassroomService : IClassroomService
         Ensure(AppPermissions.ClassroomView, AppPermissions.PlanningViewOwn);
         var userId = _current.UserId;
         var inst = _current.ActiveInstitutionId;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = LocalSchoolDate();
 
-        var plans = _db.Planificaciones.AsNoTracking().Where(p => !p.IsDeleted);
+        var plans = _db.Planificaciones.AsNoTracking()
+            .Include(p => p.NivelAsignatura)!.ThenInclude(n => n!.Asignatura)
+            .Include(p => p.Unidad)
+            .Where(p => !p.IsDeleted);
         if (userId is Guid uid && !_current.IsInRole(nameof(ApplicationRole.SystemAdministrator)))
             plans = plans.Where(p => p.OwnerUserId == uid || (inst != null && p.InstitutionId == inst));
 
         var planList = await plans.ToListAsync(cancellationToken);
         var planIds = planList.Select(p => p.Id).ToList();
+        var planById = planList.ToDictionary(p => p.Id);
+
+        var courseIds = planList.Where(p => p.SchoolCourseId is not null).Select(p => p.SchoolCourseId!.Value).Distinct().ToList();
+        var courses = await _db.SchoolCourses.AsNoTracking()
+            .Where(c => courseIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, cancellationToken);
+
         var classes = await _db.Clases.AsNoTracking()
             .Where(c => planIds.Contains(c.PlanificacionId))
             .ToListAsync(cancellationToken);
@@ -59,10 +72,16 @@ public sealed class ClassroomService : IClassroomService
         var upcoming = classes
             .Where(c => c.Fecha >= today && c.Estado == EstadoClase.Planificada)
             .OrderBy(c => c.Fecha)
-            .Take(5)
+            .ThenBy(c => c.Numero)
+            .Take(8)
             .ToList();
 
-        var oaIds = upcoming.Select(c => c.ObjetivoAprendizajeId).Distinct().ToList();
+        var todayClasses = classes
+            .Where(c => c.Fecha == today && c.Estado == EstadoClase.Planificada)
+            .OrderBy(c => c.Numero)
+            .ToList();
+
+        var oaIds = upcoming.Concat(todayClasses).Select(c => c.ObjetivoAprendizajeId).Distinct().ToList();
         var oaCodes = await _db.ObjetivosAprendizaje.AsNoTracking()
             .Where(o => oaIds.Contains(o.Id))
             .ToDictionaryAsync(o => o.Id, o => o.Codigo, cancellationToken);
@@ -77,14 +96,37 @@ public sealed class ClassroomService : IClassroomService
                 .CountAsync(s => s.InstitutionId == iid && s.IsActive, cancellationToken);
         }
 
-        var reminders = new List<string>();
-        if (classes.Any(c => c.Estado == EstadoClase.Planificada && c.Fecha < today))
-            reminders.Add("Hay clases planificadas con fecha vencida. Márquelas como realizadas o reprogramelas.");
+        var overdue = classes.Count(c => c.Estado == EstadoClase.Planificada && c.Fecha < today);
+        var pendingItems = new List<TeacherPendingItemDto>();
+        if (overdue > 0)
+            pendingItems.Add(new TeacherPendingItemDto
+            {
+                Kind = "overdue_class",
+                Text = overdue == 1
+                    ? "1 clase planificada con fecha vencida"
+                    : $"{overdue} clases planificadas con fecha vencida"
+            });
         if (alerts > 0)
-            reminders.Add("Revise alertas de cobertura curricular (OA o indicadores sin evidencia).");
+            pendingItems.Add(new TeacherPendingItemDto
+            {
+                Kind = "coverage",
+                Text = alerts == 1 ? "1 alerta de cobertura OA" : $"{alerts} alertas de cobertura OA"
+            });
         if (supportCount > 0)
-            reminders.Add("Hay planes PIE/DUA activos: aplique estrategias de diversificación en la clase de hoy.");
-        reminders.Add("Este registro es de apoyo docente local. No reemplaza SIGE ni el libro de clases oficial.");
+            pendingItems.Add(new TeacherPendingItemDto
+            {
+                Kind = "support",
+                Text = "Hay planes PIE/DUA activos: revise diversificación en la clase"
+            });
+        if (planList.Count == 0)
+            pendingItems.Add(new TeacherPendingItemDto
+            {
+                Kind = "planning",
+                Text = "Aún no hay planificación. Cree una desde Mis cursos o Planificaciones"
+            });
+
+        var reminders = pendingItems.Select(p => p.Text).ToList();
+        reminders.Add("Registro de apoyo docente. No reemplaza SIGE ni el libro de clases oficial.");
 
         var instName = inst is Guid iidName
             ? await _db.EducationalInstitutions.AsNoTracking()
@@ -93,26 +135,75 @@ public sealed class ClassroomService : IClassroomService
                 .FirstOrDefaultAsync(cancellationToken)
             : null;
 
+        var teacherName = _current.UserName ?? "Docente";
+        UpcomingClassDto MapUpcoming(Clase c)
+        {
+            var plan = planById[c.PlanificacionId];
+            var courseName = plan.SchoolCourseId is Guid cid && courses.TryGetValue(cid, out var course)
+                ? course.DisplayName
+                : string.Empty;
+            var subject = plan.NivelAsignatura?.NombreEnNivel
+                          ?? plan.NivelAsignatura?.Asignatura?.Nombre
+                          ?? string.Empty;
+            var unit = plan.Unidad is null ? string.Empty : $"{plan.Unidad.Numero}. {plan.Unidad.Nombre}";
+            return new UpcomingClassDto
+            {
+                ClassId = c.Id,
+                PlanningId = c.PlanificacionId,
+                SchoolCourseId = plan.SchoolCourseId,
+                PlanningName = plan.Nombre,
+                CourseDisplayName = courseName,
+                SubjectName = subject,
+                UnitName = unit,
+                Date = c.Fecha,
+                ObjectiveCode = oaCodes.GetValueOrDefault(c.ObjetivoAprendizajeId, ""),
+                Estado = c.Estado.ToString()
+            };
+        }
+
         return new TeacherDashboardDto
         {
-            TeacherName = _current.UserName ?? "Docente",
+            TeacherName = teacherName,
+            Greeting = BuildGreeting(teacherName),
             InstitutionName = instName,
+            Today = today,
             ActivePlannings = planList.Count,
             UpcomingClasses = upcoming.Count,
             PendingClasses = classes.Count(c => c.Estado == EstadoClase.Planificada),
             OpenCoverageAlerts = alerts,
             StudentsWithSupportPlans = supportCount,
-            NextClasses = upcoming.Select(c => new UpcomingClassDto
-            {
-                ClassId = c.Id,
-                PlanningId = c.PlanificacionId,
-                PlanningName = planList.First(p => p.Id == c.PlanificacionId).Nombre,
-                Date = c.Fecha,
-                ObjectiveCode = oaCodes.GetValueOrDefault(c.ObjetivoAprendizajeId, ""),
-                Estado = c.Estado.ToString()
-            }).ToList(),
+            TodayClasses = todayClasses.Select(MapUpcoming).ToList(),
+            NextClasses = upcoming.Select(MapUpcoming).ToList(),
+            PendingItems = pendingItems,
             Reminders = reminders
         };
+    }
+
+    private static DateOnly LocalSchoolDate()
+    {
+        try
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("America/Santiago");
+            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz));
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return DateOnly.FromDateTime(DateTime.Now);
+        }
+        catch (InvalidTimeZoneException)
+        {
+            return DateOnly.FromDateTime(DateTime.Now);
+        }
+    }
+
+    private static string BuildGreeting(string teacherName)
+    {
+        var hour = DateTime.Now.Hour;
+        var saludo = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+        var shortName = teacherName.Contains('@') ? teacherName.Split('@')[0] : teacherName;
+        if (string.Equals(shortName, "admin", StringComparison.OrdinalIgnoreCase))
+            shortName = "docente";
+        return $"{saludo}, {shortName}";
     }
 
     public async Task<StudentDto> CreateStudentAsync(CreateStudentRequest request, CancellationToken cancellationToken = default)
@@ -332,6 +423,17 @@ public sealed class ClassroomService : IClassroomService
             throw new InvalidOperationException("Indique el establecimiento o cree la evaluación desde una clase.");
         EnsureInstitution(institutionId);
 
+        var documentId = request.EducationalDocumentId;
+        if (documentId is null && classId is Guid classForDoc)
+        {
+            documentId = await _db.EducationalDocuments.AsNoTracking()
+                .Where(d => d.ClassId == classForDoc && !d.IsDeleted
+                            && d.DocumentType == EducationalDocumentType.Assessment)
+                .OrderByDescending(d => d.UpdatedAt)
+                .Select(d => (Guid?)d.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         var entity = new LearningAssessment
         {
             Id = Guid.NewGuid(),
@@ -340,7 +442,7 @@ public sealed class ClassroomService : IClassroomService
             ClassId = classId,
             PlanningId = planningId,
             ObjectiveLearningId = oaId,
-            EducationalDocumentId = request.EducationalDocumentId,
+            EducationalDocumentId = documentId,
             Purpose = request.Purpose,
             Name = request.Name.Trim(),
             Date = request.Date,
@@ -349,12 +451,16 @@ public sealed class ClassroomService : IClassroomService
         };
         _db.LearningAssessments.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
-        return MapAssessment(entity);
+        return await MapAssessmentAsync(entity, cancellationToken);
     }
 
     public async Task SaveScoresAsync(Guid assessmentId, IReadOnlyList<SaveAssessmentScoreRequest> scores, CancellationToken cancellationToken = default)
     {
         Ensure(AppPermissions.ClassroomEvaluate);
+        var assessment = await _db.LearningAssessments
+            .FirstAsync(a => a.Id == assessmentId, cancellationToken);
+        EnsureInstitution(assessment.InstitutionId);
+
         var existing = await _db.AssessmentScores.Where(s => s.LearningAssessmentId == assessmentId).ToListAsync(cancellationToken);
         _db.AssessmentScores.RemoveRange(existing);
         foreach (var s in scores)
@@ -369,6 +475,8 @@ public sealed class ClassroomService : IClassroomService
                 Feedback = s.Feedback
             });
         }
+
+        await RecordAssessmentEvidenceAsync(assessment, scores, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -430,7 +538,208 @@ public sealed class ClassroomService : IClassroomService
         else if (_current.ActiveInstitutionId is Guid iid)
             q = q.Where(a => a.InstitutionId == iid);
         var list = await q.OrderByDescending(a => a.Date).Take(100).ToListAsync(cancellationToken);
-        return list.Select(MapAssessment).ToList();
+        var result = new List<LearningAssessmentDto>();
+        foreach (var a in list)
+            result.Add(await MapAssessmentAsync(a, cancellationToken));
+        return result;
+    }
+
+    public async Task<AssessmentEvidenceSummaryDto> GetAssessmentEvidenceAsync(
+        Guid assessmentId, CancellationToken cancellationToken = default)
+    {
+        Ensure(AppPermissions.ClassroomView, AppPermissions.ClassroomEvaluate);
+        var assessment = await _db.LearningAssessments.AsNoTracking()
+            .FirstAsync(a => a.Id == assessmentId, cancellationToken);
+        EnsureInstitution(assessment.InstitutionId);
+        var scores = await GetScoresAsync(assessmentId, cancellationToken);
+        return await BuildEvidenceSummaryAsync(assessment, scores, cancellationToken);
+    }
+
+    private async Task RecordAssessmentEvidenceAsync(
+        LearningAssessment assessment,
+        IReadOnlyList<SaveAssessmentScoreRequest> scores,
+        CancellationToken cancellationToken)
+    {
+        if (assessment.ClassId is not Guid classId) return;
+
+        var tag = $"assessment:{assessment.Id}";
+        var previous = await _db.ClassLearningEvidences
+            .Where(e => e.ClassId == classId && e.Notes == tag)
+            .ToListAsync(cancellationToken);
+        _db.ClassLearningEvidences.RemoveRange(previous);
+
+        var scoreDtos = scores.Select(s => new AssessmentScoreDto
+        {
+            StudentId = s.StudentId,
+            StudentName = string.Empty,
+            Score = s.Score,
+            AchievementLevel = s.AchievementLevel,
+            Feedback = s.Feedback
+        }).ToList();
+        var summary = await BuildEvidenceSummaryAsync(assessment, scoreDtos, cancellationToken);
+
+        var evidenceType = assessment.Purpose switch
+        {
+            EvaluationPurpose.Summative => LearningEvidenceType.SummativeAssessment,
+            EvaluationPurpose.Diagnostic => LearningEvidenceType.FormativeAssessment,
+            _ => LearningEvidenceType.FormativeAssessment
+        };
+
+        Guid? indicatorId = null;
+        if (assessment.ClassId is Guid cid)
+        {
+            indicatorId = await _db.ClaseIndicadores.AsNoTracking()
+                .Where(i => i.ClaseId == cid)
+                .Select(i => (Guid?)i.IndicadorEvaluacionId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        _db.ClassLearningEvidences.Add(new ClassLearningEvidence
+        {
+            Id = Guid.NewGuid(),
+            ClassId = classId,
+            EvaluationIndicatorId = indicatorId,
+            EvidenceType = evidenceType,
+            Description = summary.ReadingSummary,
+            Source = "Assessment",
+            Notes = tag,
+            RecordedAt = DateTime.UtcNow
+        });
+    }
+
+    private async Task<AssessmentEvidenceSummaryDto> BuildEvidenceSummaryAsync(
+        LearningAssessment assessment,
+        IReadOnlyList<AssessmentScoreDto> scores,
+        CancellationToken cancellationToken)
+    {
+        var withLevel = scores.Where(s => !string.IsNullOrWhiteSpace(s.AchievementLevel)).ToList();
+        static bool IsPorLograr(string? l) =>
+            (l ?? "").Contains("por lograr", StringComparison.OrdinalIgnoreCase)
+            || (l ?? "").Equals("PL", StringComparison.OrdinalIgnoreCase);
+        static bool IsLogrado(string? l) =>
+            (l ?? "").Equals("logrado", StringComparison.OrdinalIgnoreCase)
+            || ((l ?? "").Contains("logrado", StringComparison.OrdinalIgnoreCase)
+                && !(l ?? "").Contains("medianamente", StringComparison.OrdinalIgnoreCase)
+                && !(l ?? "").Contains("por lograr", StringComparison.OrdinalIgnoreCase));
+        static bool IsMedianamente(string? l) =>
+            (l ?? "").Contains("medianamente", StringComparison.OrdinalIgnoreCase);
+
+        var porLograr = withLevel.Count(s => IsPorLograr(s.AchievementLevel));
+        var logrado = withLevel.Count(s => IsLogrado(s.AchievementLevel));
+        var medianamente = withLevel.Count(s => IsMedianamente(s.AchievementLevel));
+        // If labels don't match buckets, count remainder as medianamente for display stability.
+        var classified = porLograr + logrado + medianamente;
+        if (classified < withLevel.Count)
+            medianamente += withLevel.Count - classified;
+
+        var numeric = scores.Where(s => s.Score is not null).Select(s => s.Score!.Value).ToList();
+        var avg = numeric.Count == 0 ? (decimal?)null : Math.Round(numeric.Average(), 1);
+
+        string oaCode = string.Empty;
+        string oaDesc = string.Empty;
+        Guid? oaId = assessment.ObjectiveLearningId;
+        if (oaId is Guid oid)
+        {
+            var oa = await _db.ObjetivosAprendizaje.AsNoTracking().FirstOrDefaultAsync(o => o.Id == oid, cancellationToken);
+            if (oa is not null)
+            {
+                oaCode = oa.Codigo;
+                oaDesc = oa.Descripcion;
+            }
+        }
+
+        var indicators = new List<string>();
+        if (assessment.ClassId is Guid classId)
+        {
+            var indIds = await _db.ClaseIndicadores.AsNoTracking()
+                .Where(i => i.ClaseId == classId)
+                .Select(i => i.IndicadorEvaluacionId)
+                .ToListAsync(cancellationToken);
+            indicators = await _db.IndicadoresEvaluacion.AsNoTracking()
+                .Where(i => indIds.Contains(i.Id))
+                .Select(i => i.Descripcion)
+                .ToListAsync(cancellationToken);
+        }
+
+        IReadOnlyList<AssessmentSpecificationRowDto> specs = [];
+        if (assessment.EducationalDocumentId is Guid docId)
+        {
+            var rawSpecs = await _db.AssessmentSpecifications.AsNoTracking()
+                .Where(s => s.EducationalDocumentId == docId)
+                .ToListAsync(cancellationToken);
+            var indIds = rawSpecs.Select(s => s.EvaluationIndicatorId).Distinct().ToList();
+            var indNames = await _db.IndicadoresEvaluacion.AsNoTracking()
+                .Where(i => indIds.Contains(i.Id))
+                .ToDictionaryAsync(i => i.Id, i => i.Descripcion, cancellationToken);
+            specs = rawSpecs.Select(s => new AssessmentSpecificationRowDto
+            {
+                Id = s.Id,
+                EvaluationIndicatorId = s.EvaluationIndicatorId,
+                IndicatorDescription = indNames.GetValueOrDefault(s.EvaluationIndicatorId, "Indicador"),
+                BloomLevel = s.BloomLevel,
+                ItemCount = s.ItemCount,
+                TotalPoints = s.TotalPoints,
+                WeightPercentage = s.WeightPercentage
+            }).ToList();
+        }
+
+        var weakIds = scores.Where(s => IsPorLograr(s.AchievementLevel)).Select(s => s.StudentId).ToHashSet();
+        var needsSupport = scores
+            .Where(s => weakIds.Contains(s.StudentId) && !string.IsNullOrWhiteSpace(s.StudentName))
+            .Select(s => s.StudentName)
+            .Distinct()
+            .Take(12)
+            .ToList();
+        if (needsSupport.Count == 0 && weakIds.Count > 0 && assessment.ClassId is Guid cid2)
+        {
+            var roster = await GetRosterForClassAsync(cid2, cancellationToken);
+            needsSupport = roster.Students
+                .Where(s => weakIds.Contains(s.StudentId))
+                .Select(s => s.DisplayName)
+                .Take(12)
+                .ToList();
+        }
+
+        var needsReinforcement = withLevel.Count > 0
+            && (porLograr * 2 >= withLevel.Count || (porLograr + medianamente) * 3 >= withLevel.Count * 2);
+
+        var purposeLabel = assessment.Purpose switch
+        {
+            EvaluationPurpose.Diagnostic => "Diagnóstica",
+            EvaluationPurpose.Summative => "Sumativa",
+            _ => "Formativa"
+        };
+
+        var reading = withLevel.Count == 0
+            ? $"OA {oaCode}: aún no hay niveles de logro registrados."
+            : $"OA {oaCode}: {logrado} logrado(s), {medianamente} medianamente logrado(s), {porLograr} por lograr"
+              + (avg is not null ? $". Promedio {avg}." : ".")
+              + (needsReinforcement
+                  ? " Se recomienda crear un refuerzo alineado a este OA."
+                  : " El grupo avanza; mantenga seguimiento formativo.");
+
+        return new AssessmentEvidenceSummaryDto
+        {
+            AssessmentId = assessment.Id,
+            AssessmentName = assessment.Name,
+            ClassId = assessment.ClassId,
+            ObjectiveId = oaId,
+            ObjectiveCode = oaCode,
+            ObjectiveDescription = oaDesc,
+            PurposeLabel = purposeLabel,
+            StudentsTotal = scores.Count,
+            StudentsWithLevel = withLevel.Count,
+            CountPorLograr = porLograr,
+            CountMedianamente = medianamente,
+            CountLogrado = logrado,
+            AverageScore = avg,
+            NeedsReinforcement = needsReinforcement,
+            ReadingSummary = reading,
+            Indicators = indicators,
+            SpecificationTable = specs,
+            EducationalDocumentId = assessment.EducationalDocumentId,
+            StudentsNeedingSupport = needsSupport
+        };
     }
 
     private void Ensure(params string[] permissions)
@@ -471,15 +780,30 @@ public sealed class ClassroomService : IClassroomService
         IsActive = p.IsActive
     };
 
-    private static LearningAssessmentDto MapAssessment(LearningAssessment a) => new()
+    private async Task<LearningAssessmentDto> MapAssessmentAsync(LearningAssessment a, CancellationToken ct)
     {
-        Id = a.Id,
-        Name = a.Name,
-        Purpose = a.Purpose,
-        Date = a.Date,
-        ClassId = a.ClassId,
-        SchoolCourseId = a.SchoolCourseId,
-        ObjectiveLearningId = a.ObjectiveLearningId,
-        Criteria = a.Criteria
-    };
+        string? code = null;
+        string? desc = null;
+        if (a.ObjectiveLearningId is Guid oid)
+        {
+            var oa = await _db.ObjetivosAprendizaje.AsNoTracking().FirstOrDefaultAsync(o => o.Id == oid, ct);
+            code = oa?.Codigo;
+            desc = oa?.Descripcion;
+        }
+
+        return new LearningAssessmentDto
+        {
+            Id = a.Id,
+            Name = a.Name,
+            Purpose = a.Purpose,
+            Date = a.Date,
+            ClassId = a.ClassId,
+            SchoolCourseId = a.SchoolCourseId,
+            ObjectiveLearningId = a.ObjectiveLearningId,
+            EducationalDocumentId = a.EducationalDocumentId,
+            ObjectiveCode = code,
+            ObjectiveDescription = desc,
+            Criteria = a.Criteria
+        };
+    }
 }

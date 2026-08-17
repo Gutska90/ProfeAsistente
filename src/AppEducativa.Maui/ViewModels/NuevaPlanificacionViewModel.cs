@@ -7,18 +7,26 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AppEducativa.Maui.ViewModels;
 
+[QueryProperty(nameof(PreferredCourseId), "courseId")]
 public partial class NuevaPlanificacionViewModel : ObservableObject
 {
     private readonly IApiClient _api;
     private readonly IAuthenticationService _auth;
     private readonly LocalApiLauncher _launcher;
     private bool _suspend;
+    private Guid? _preferredCourseId;
 
     public NuevaPlanificacionViewModel(IApiClient api, IAuthenticationService auth, LocalApiLauncher launcher)
     {
         _api = api;
         _auth = auth;
         _launcher = launcher;
+    }
+
+    public string PreferredCourseId
+    {
+        get => _preferredCourseId?.ToString() ?? string.Empty;
+        set => _preferredCourseId = Guid.TryParse(value, out var id) ? id : null;
     }
 
     public ObservableCollection<NivelDto> Niveles { get; } = [];
@@ -66,9 +74,23 @@ public partial class NuevaPlanificacionViewModel : ObservableObject
                                 ?? Niveles.FirstOrDefault();
             _suspend = false;
             await CargarCursosAsync();
+            if (_preferredCourseId is Guid preferred)
+            {
+                var preferredCourse = _cursosInstitucion.FirstOrDefault(c => c.Id == preferred);
+                if (preferredCourse is not null)
+                {
+                    _suspend = true;
+                    NivelSeleccionado = Niveles.FirstOrDefault(n => n.Id == preferredCourse.LevelId) ?? NivelSeleccionado;
+                    _suspend = false;
+                }
+            }
             FiltrarCursos();
+            if (_preferredCourseId is Guid preferredId)
+                CursoSeleccionado = Cursos.FirstOrDefault(c => c.Id == preferredId) ?? CursoSeleccionado;
             await RecargarAsignaturasAsync();
-            MensajeEstado = $"{Niveles.Count} nivel(es). Desplace la lista y toque para elegir.";
+            MensajeEstado = CursoSeleccionado is null
+                ? $"{Niveles.Count} nivel(es). Desplace la lista y toque para elegir."
+                : $"Curso preseleccionado: {CursoSeleccionado.DisplayName}.";
         }
         catch (Exception ex)
         {

@@ -1,6 +1,8 @@
 using AppEducativa.Api.Services.AI.DocumentGeneration;
 using AppEducativa.Api.Services.AI.Gemini;
 using AppEducativa.Shared.Dtos;
+using AppEducativa.Shared.Enums;
+using AppEducativa.Shared.Ui;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,6 +36,31 @@ public class EducationalDocumentController : ControllerBase
     public async Task<IActionResult> List(Guid classId, CancellationToken ct)
     {
         try { return Ok(await _service.ListByClassAsync(classId, ct)); }
+        catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
+        { return ToProblem(ex); }
+    }
+
+    /// <summary>Biblioteca docente: materiales de las planificaciones del usuario.</summary>
+    [HttpGet("api/biblioteca/materiales")]
+    public async Task<IActionResult> Library(
+        [FromQuery] Guid? courseId,
+        [FromQuery] string? type,
+        [FromQuery] string? q,
+        CancellationToken ct)
+    {
+        try
+        {
+            EducationalDocumentType? parsed = null;
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                if (Enum.TryParse<EducationalDocumentType>(type, true, out var t))
+                    parsed = t;
+                else
+                    parsed = MaterialUiLabels.ParseTypeLabel(type);
+            }
+
+            return Ok(await _service.ListLibraryAsync(courseId, parsed, q, ct));
+        }
         catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
         { return ToProblem(ex); }
     }
