@@ -122,6 +122,9 @@ public sealed class PilotMetricsService : IPilotMetricsService
         if (request.MinutesSavedEstimate is < 0 or > 480)
             throw new ArgumentOutOfRangeException(nameof(request.MinutesSavedEstimate), "Indique entre 0 y 480 minutos.");
 
+        if (!WithoutAppDurationBuckets.IsValid(request.WithoutAppDurationBucket))
+            throw new ArgumentOutOfRangeException(nameof(request.WithoutAppDurationBucket), "Tramo de tiempo sin app no válido.");
+
         var comment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
         if (comment is { Length: > 1000 })
             comment = comment[..1000];
@@ -135,6 +138,9 @@ public sealed class PilotMetricsService : IPilotMetricsService
             MinutesSavedEstimate = request.MinutesSavedEstimate,
             WouldUseAgain = request.WouldUseAgain,
             MaterialsUsedInClass = request.MaterialsUsedInClass,
+            WithoutAppDurationBucket = string.IsNullOrWhiteSpace(request.WithoutAppDurationBucket)
+                ? null
+                : request.WithoutAppDurationBucket.Trim(),
             Comment = comment,
             CreatedAt = DateTime.UtcNow
         };
@@ -158,6 +164,7 @@ public sealed class PilotMetricsService : IPilotMetricsService
                 MinutesSavedEstimate = r.MinutesSavedEstimate,
                 WouldUseAgain = r.WouldUseAgain,
                 MaterialsUsedInClass = r.MaterialsUsedInClass,
+                WithoutAppDurationBucket = r.WithoutAppDurationBucket,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt
             })
@@ -192,6 +199,7 @@ public sealed class PilotMetricsService : IPilotMetricsService
         MinutesSavedEstimate = r.MinutesSavedEstimate,
         WouldUseAgain = r.WouldUseAgain,
         MaterialsUsedInClass = r.MaterialsUsedInClass,
+        WithoutAppDurationBucket = r.WithoutAppDurationBucket,
         Comment = r.Comment,
         CreatedAt = r.CreatedAt
     };

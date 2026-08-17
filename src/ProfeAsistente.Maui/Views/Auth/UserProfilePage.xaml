@@ -20,6 +20,16 @@
 
             <Label Text="¿Cuántos minutos ahorró en esta sesión?" FontAttributes="Bold" Margin="0,8,0,0"/>
             <Entry x:Name="MinutesSavedEntry" Keyboard="Numeric" Placeholder="ej. 20" Text="20"/>
+            <Label Text="¿Cuánto le habría tomado sin ProfeAsistente?" FontAttributes="Bold"/>
+            <Picker x:Name="WithoutAppPicker" Title="Elija un tramo">
+                <Picker.Items>
+                    <x:String>&lt;15 min</x:String>
+                    <x:String>15–30 min</x:String>
+                    <x:String>30–60 min</x:String>
+                    <x:String>1–2 horas</x:String>
+                    <x:String>&gt;2 horas</x:String>
+                </Picker.Items>
+            </Picker>
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Sí lo usé en clase" Clicked="OnUsedInClassYes"/>
                 <Button Text="Aún no" Style="{StaticResource GhostButton}" Clicked="OnUsedInClassNo"/>

@@ -1,0 +1,82 @@
+{
+  "id": "PA-CN-6B-001",
+  "course": "6° Básico",
+  "subject": "Ciencias Naturales",
+  "objectiveCode": "CN06 OA 04",
+  "documentType": "Exercises",
+  "requestedItemCount": 10,
+  "expectations": {
+    "objectiveCodeMustMatch": true,
+    "minItems": 2,
+    "maxItems": 12,
+    "requireTitle": true,
+    "requireInstructions": true,
+    "multipleChoiceMustHaveOneCorrect": true,
+    "forbidExecutableHtml": true
+  },
+  "sampleDocument": {
+    "curriculum": {
+      "objectiveId": "11111111-1111-1111-1111-111111111111",
+      "objectiveCode": "CN06 OA 04",
+      "curriculumRelease": "demo",
+      "indicatorIds": [
+        "22222222-2222-2222-2222-222222222222"
+      ]
+    },
+    "document": {
+      "title": "Actividad: sistemas del cuerpo",
+      "instructions": "Trabaje en silencio. Tiempo estimado: 40 minutos.",
+      "estimatedDurationMinutes": 40,
+      "totalPoints": 2,
+      "items": [
+        {
+          "order": 1,
+          "type": "MultipleChoice",
+          "statement": "El sistema circulatorio transporta principalmente",
+          "bloomLevel": "Comprender",
+          "difficulty": "Basic",
+          "points": 1,
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "sangre",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "aire sólido",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "luz",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "minerales de la tierra",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "type": "ShortAnswer",
+          "statement": "Explique una función del corazón.",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Intermediate",
+          "points": 1,
+          "expectedAnswer": "Bombar sangre",
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ]
+        }
+      ]
+    },
+    "requiresReview": false,
+    "warnings": []
+  }
+}

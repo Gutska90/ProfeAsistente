@@ -1,0 +1,82 @@
+{
+  "id": "PA-LEN-7B-001",
+  "course": "7° Básico",
+  "subject": "Lenguaje",
+  "objectiveCode": "LE07 OA 02",
+  "documentType": "Assessment",
+  "requestedItemCount": 10,
+  "expectations": {
+    "objectiveCodeMustMatch": true,
+    "minItems": 2,
+    "maxItems": 12,
+    "requireTitle": true,
+    "requireInstructions": true,
+    "multipleChoiceMustHaveOneCorrect": true,
+    "forbidExecutableHtml": true
+  },
+  "sampleDocument": {
+    "curriculum": {
+      "objectiveId": "11111111-1111-1111-1111-111111111111",
+      "objectiveCode": "LE07 OA 02",
+      "curriculumRelease": "demo",
+      "indicatorIds": [
+        "22222222-2222-2222-2222-222222222222"
+      ]
+    },
+    "document": {
+      "title": "Prueba: tipos de narrador",
+      "instructions": "Trabaje en silencio. Tiempo estimado: 40 minutos.",
+      "estimatedDurationMinutes": 40,
+      "totalPoints": 2,
+      "items": [
+        {
+          "order": 1,
+          "type": "MultipleChoice",
+          "statement": "Un narrador en primera persona usa",
+          "bloomLevel": "Comprender",
+          "difficulty": "Basic",
+          "points": 1,
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "yo",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "él",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "se",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "usted",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "type": "ShortAnswer",
+          "statement": "Justifique con un ejemplo del texto.",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Intermediate",
+          "points": 1,
+          "expectedAnswer": "Uso de “yo” en el relato",
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ]
+        }
+      ]
+    },
+    "requiresReview": false,
+    "warnings": []
+  }
+}

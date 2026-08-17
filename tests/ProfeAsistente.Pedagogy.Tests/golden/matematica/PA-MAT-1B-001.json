@@ -1,0 +1,82 @@
+{
+  "id": "PA-MAT-1B-001",
+  "course": "1° Básico",
+  "subject": "Matemática",
+  "objectiveCode": "MA01 OA 01",
+  "documentType": "LearningGuide",
+  "requestedItemCount": 10,
+  "expectations": {
+    "objectiveCodeMustMatch": true,
+    "minItems": 2,
+    "maxItems": 12,
+    "requireTitle": true,
+    "requireInstructions": true,
+    "multipleChoiceMustHaveOneCorrect": true,
+    "forbidExecutableHtml": true
+  },
+  "sampleDocument": {
+    "curriculum": {
+      "objectiveId": "11111111-1111-1111-1111-111111111111",
+      "objectiveCode": "MA01 OA 01",
+      "curriculumRelease": "demo",
+      "indicatorIds": [
+        "22222222-2222-2222-2222-222222222222"
+      ]
+    },
+    "document": {
+      "title": "Guía: números del 1 al 20",
+      "instructions": "Trabaje en silencio. Tiempo estimado: 40 minutos.",
+      "estimatedDurationMinutes": 40,
+      "totalPoints": 2,
+      "items": [
+        {
+          "order": 1,
+          "type": "MultipleChoice",
+          "statement": "¿Cuál número viene después del 7?",
+          "bloomLevel": "Recordar",
+          "difficulty": "Basic",
+          "points": 1,
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "8",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "9",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "6",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "5",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "type": "ShortAnswer",
+          "statement": "Cuente de 2 en 2: 2, 4, __, 8.",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Intermediate",
+          "points": 1,
+          "expectedAnswer": "6",
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ]
+        }
+      ]
+    },
+    "requiresReview": false,
+    "warnings": []
+  }
+}

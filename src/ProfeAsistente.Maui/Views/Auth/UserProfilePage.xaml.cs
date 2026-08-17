@@ -71,11 +71,21 @@ public partial class UserProfilePage : ContentPage
 
         try
         {
+            var bucket = WithoutAppPicker.SelectedIndex switch
+            {
+                0 => WithoutAppDurationBuckets.Under15,
+                1 => WithoutAppDurationBuckets.From15To30,
+                2 => WithoutAppDurationBuckets.From30To60,
+                3 => WithoutAppDurationBuckets.From1To2Hours,
+                4 => WithoutAppDurationBuckets.Over2Hours,
+                _ => null
+            };
             await _api.SubmitPilotSessionReportAsync(new SubmitPilotSessionReportRequest
             {
                 MinutesSavedEstimate = minutes,
                 MaterialsUsedInClass = _usedInClass,
-                WouldUseAgain = true
+                WouldUseAgain = true,
+                WithoutAppDurationBucket = bucket
             });
             PilotMessage.Text = "Gracias: registramos su ahorro de tiempo.";
             await RefreshPilotAsync();

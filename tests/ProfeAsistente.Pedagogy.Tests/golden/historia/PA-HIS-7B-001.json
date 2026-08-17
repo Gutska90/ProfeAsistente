@@ -1,0 +1,82 @@
+{
+  "id": "PA-HIS-7B-001",
+  "course": "7° Básico",
+  "subject": "Historia",
+  "objectiveCode": "HI07 OA 05",
+  "documentType": "Assessment",
+  "requestedItemCount": 10,
+  "expectations": {
+    "objectiveCodeMustMatch": true,
+    "minItems": 2,
+    "maxItems": 12,
+    "requireTitle": true,
+    "requireInstructions": true,
+    "multipleChoiceMustHaveOneCorrect": true,
+    "forbidExecutableHtml": true
+  },
+  "sampleDocument": {
+    "curriculum": {
+      "objectiveId": "11111111-1111-1111-1111-111111111111",
+      "objectiveCode": "HI07 OA 05",
+      "curriculumRelease": "demo",
+      "indicatorIds": [
+        "22222222-2222-2222-2222-222222222222"
+      ]
+    },
+    "document": {
+      "title": "Prueba: independencia de Chile",
+      "instructions": "Trabaje en silencio. Tiempo estimado: 40 minutos.",
+      "estimatedDurationMinutes": 40,
+      "totalPoints": 2,
+      "items": [
+        {
+          "order": 1,
+          "type": "MultipleChoice",
+          "statement": "La Batalla de Chacabuco ocurrió en",
+          "bloomLevel": "Recordar",
+          "difficulty": "Basic",
+          "points": 1,
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "1817",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "1492",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "2010",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "1600",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "type": "ShortAnswer",
+          "statement": "Mencione un prócer de la independencia chilena.",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Intermediate",
+          "points": 1,
+          "expectedAnswer": "O’Higgins / San Martín",
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ]
+        }
+      ]
+    },
+    "requiresReview": false,
+    "warnings": []
+  }
+}

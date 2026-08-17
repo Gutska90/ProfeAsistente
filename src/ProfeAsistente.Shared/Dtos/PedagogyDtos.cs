@@ -4,6 +4,9 @@ namespace ProfeAsistente.Shared.Dtos;
 public sealed class PedagogicalQualityReport
 {
     public bool Passed { get; init; }
+    /// <summary>¿Pasó validación estructural/esquema (no implica alineación pedagógica).</summary>
+    public bool SchemaValidity { get; init; }
+    /// <summary>% alineación OA código/id vs contexto autorizado (independiente de SchemaValidity).</summary>
     public int ObjectiveAlignmentPercent { get; init; }
     public int IndicatorCoveragePercent { get; init; }
     public int CognitiveDiversityPercent { get; init; }
@@ -46,11 +49,13 @@ public static class MaterialFeedbackReasons
     public const string Duplicated = "Duplicated";
     public const string Unclear = "Unclear";
     public const string ContentError = "ContentError";
+    public const string WrongContent = "WrongContent";
+    public const string BadAnswerKey = "BadAnswerKey";
     public const string Other = "Other";
 
     public static readonly IReadOnlyList<string> All =
     [
-        NotAligned, TooHard, TooEasy, Duplicated, Unclear, ContentError, Other
+        NotAligned, TooHard, TooEasy, Duplicated, Unclear, ContentError, WrongContent, BadAnswerKey, Other
     ];
 
     public static string Label(string? reason) => reason switch
@@ -61,6 +66,8 @@ public static class MaterialFeedbackReasons
         Duplicated => "Preguntas repetidas",
         Unclear => "Instrucciones poco claras",
         ContentError => "Error de contenido",
+        WrongContent => "Contenido incorrecto",
+        BadAnswerKey => "Clave de respuestas mala",
         Other => "Otro",
         _ => "—"
     };

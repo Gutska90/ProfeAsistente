@@ -55,6 +55,8 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
         MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooEasy),
         MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Duplicated),
         MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Unclear),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.WrongContent),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.BadAnswerKey),
         MaterialFeedbackReasons.Label(MaterialFeedbackReasons.ContentError),
         MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Other)
     ];
@@ -328,6 +330,8 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
             var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooEasy) => MaterialFeedbackReasons.TooEasy,
             var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Duplicated) => MaterialFeedbackReasons.Duplicated,
             var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Unclear) => MaterialFeedbackReasons.Unclear,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.WrongContent) => MaterialFeedbackReasons.WrongContent,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.BadAnswerKey) => MaterialFeedbackReasons.BadAnswerKey,
             var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.ContentError) => MaterialFeedbackReasons.ContentError,
             _ => MaterialFeedbackReasons.Other
         };

@@ -11,6 +11,8 @@ public class PilotSessionReport
     public int MinutesSavedEstimate { get; set; }
     public bool? WouldUseAgain { get; set; }
     public bool? MaterialsUsedInClass { get; set; }
+    /// <summary>Estimación sin app: Under15 | From15To30 | From30To60 | From1To2Hours | Over2Hours</summary>
+    public string? WithoutAppDurationBucket { get; set; }
     public string? Comment { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

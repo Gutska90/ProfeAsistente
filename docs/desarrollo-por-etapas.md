@@ -1,6 +1,6 @@
 # Desarrollo por etapas
 
-Regla: **una etapa activa a la vez**. No abrir sync nube, SIGE ni ERP escolar hasta cerrar la etapa en curso.
+Regla: **una etapa activa a la vez**. Congelar features grandes hasta validar pedagogía + piloto.
 
 Cada etapa termina cuando:
 
@@ -14,35 +14,31 @@ Cada etapa termina cuando:
 | Etapa | Qué quedó |
 |-------|-----------|
 | A–E, 1–5 | Currículum, planificación, materiales, seguridad, aula, calendario, evaluación, UI, offline |
-| **P0** | Navegación Hoy / Mis cursos / Planificaciones / Configuración |
-| **P1** | Clase hub Copilot |
-| **P2** | Biblioteca + lenguaje UI |
-| **P3** | Evaluación + evidencia por OA → refuerzo |
-| **P4** | README, `IAiProvider`, CORS por ambiente, Documento legado deprecado |
-| **P5** | Consolidación técnica — [consolidacion-tecnica-p5.md](consolidacion-tecnica-p5.md) |
-| **P6** | Flujo clase end-to-end — [flujo-clase-e2e-p6.md](flujo-clase-e2e-p6.md) |
-| **P7** | Offline más robusto — [offline-robusto-p7.md](offline-robusto-p7.md) |
-| **P8** | Rename `AppEducativa` → `ProfeAsistente` — [rename-profeasistente-p8.md](rename-profeasistente-p8.md) |
-| **P9** | Empaquetado piloto Mac — [release-mac-p9.md](release-mac-p9.md) |
+| **P0–P4** | Navegación, hub clase, biblioteca, evidencia→refuerzo, `IAiProvider` |
+| **P5–P9** | Consolidación, e2e, offline, rename, pack Mac |
 | **P10** | Calidad pedagógica — [calidad-pedagogica-p10.md](calidad-pedagogica-p10.md) |
 | **P11** | Observabilidad IA — [observabilidad-ia-p11.md](observabilidad-ia-p11.md) |
 | **P12** | Reutilización — [reutilizacion-p12.md](reutilizacion-p12.md) |
-| **Piloto 0.1** | Instrumentación — [piloto-0.1.md](piloto-0.1.md) |
+| **Piloto 0.1 (código)** | Instrumentación — [piloto-0.1.md](piloto-0.1.md) |
 
-## Cola (validación de producto, no más plataforma)
+## Cola (validación, no plataforma)
 
-Objetivo inmediato: **correr el piloto con 3–5 docentes** usando la instrumentación (métricas + autoreporte).
+La incertidumbre ya no es C#/EF/MAUI. Es: ¿el docente entiende, confía y ahorra tiempo?
 
 | Orden | Etapa | Trabajo | Prioridad |
 |-------|-------|---------|-----------|
-| 1 | — | **Ejecutar piloto** con docentes reales (checklist en piloto-0.1.md) | 🔴 |
-| 2 | **P13** | Evidencia avanzada: ítem→OA, Excel, clase de refuerzo | 🟠 |
-| 3 | **P14** | Windows packaging (después de validar producto) | 🟡 |
+| 1 | **P13** | **Corpus pedagógico** 30–50 golden cases (+ adversariales) — [corpus-pedagogico-p13.md](corpus-pedagogico-p13.md) | 🔴 |
+| 2 | **P14** | **Piloto docente** 3–5 profesores, 2 semanas (medir export, tiempo, retención) | 🔴 |
+| 3 | **P15** | Solo mejoras que salgan del piloto (no decidirlas ahora) | 🟠 |
+
+### Congelado hasta P14
+
+Evidencia Excel avanzada, Windows packaging, adaptar-OA automático, evaluación subjetiva con otra IA, SIGE/ERP, App Store.
 
 ### Fuera de cola
 
-SIGE, libro legal, PME, portal apoderados/estudiantes, chat, LMS, microservicios, App Store/notarización antes de validar ahorro de tiempo, Windows antes del piloto Mac.
+SIGE, libro legal, PME, portal apoderados, chat, LMS, microservicios.
 
 ## Cómo pedir trabajo
 
-`Ejecuta el piloto` (checklist en piloto-0.1.md) o `Sigue con P13` (evidencia avanzada). P0–P12 + instrumentación piloto cerradas; no hinchar módulos sin validación docente.
+`Sigue con P13` (corpus) · `Ejecuta el piloto` · o un bug concreto. No abrir módulos nuevos “por si acaso”.

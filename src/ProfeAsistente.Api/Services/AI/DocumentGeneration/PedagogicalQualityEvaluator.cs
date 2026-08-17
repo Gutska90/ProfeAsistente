@@ -27,30 +27,33 @@ public sealed class PedagogicalQualityEvaluator : IPedagogicalQualityEvaluator
         var errors = validation.Errors.ToList();
         var warnings = validation.Warnings.ToList();
 
-        var structureOk = validation.IsValid
+        var schemaValidity = validation.IsValid;
+        var structureOk = schemaValidity
                           && !string.IsNullOrWhiteSpace(doc?.Document?.Title)
                           && items.Count > 0;
 
         var answersOk = items.Count == 0 || items.All(ItemHasAnswerSupport);
-        if (!answersOk && validation.IsValid)
+        if (!answersOk && schemaValidity)
             warnings.Add("Algunos ítems no tienen respuesta esperada ni explicación.");
 
         var duplicationOk = !warnings.Any(w =>
             w.Contains("duplic", StringComparison.OrdinalIgnoreCase)
+            || w.Contains("idéntic", StringComparison.OrdinalIgnoreCase)
             || w.Contains("similar", StringComparison.OrdinalIgnoreCase));
 
+        // Alineación OA: independiente de SchemaValidity (no mezclar "válido" con "alineado").
         var alignment = 0;
         if (doc?.Curriculum is not null
             && doc.Curriculum.ObjectiveId == context.Objective.Id
             && string.Equals(doc.Curriculum.ObjectiveCode, context.Objective.Code, StringComparison.OrdinalIgnoreCase))
             alignment = 100;
-        else if (validation.IsValid)
-            alignment = 100;
+        else if (doc?.Curriculum is null)
+            alignment = 0;
         else if (errors.Any(e => e.Contains("objective", StringComparison.OrdinalIgnoreCase)
                                  || e.Contains("OA", StringComparison.OrdinalIgnoreCase)))
             alignment = 0;
         else
-            alignment = 50;
+            alignment = 40;
 
         var authorized = context.Indicators.Select(i => i.Id).ToHashSet();
         var covered = items
@@ -75,16 +78,20 @@ public sealed class PedagogicalQualityEvaluator : IPedagogicalQualityEvaluator
             warnings.Add($"Cobertura de indicadores baja ({indicatorCoverage}%).");
         if (cognitiveDiversity < 50 && items.Count >= 4)
             warnings.Add("Baja diversidad cognitiva (Bloom) en los ítems.");
+        if (alignment < 100)
+            warnings.Add("Alineación de OA incompleta respecto del contexto autorizado.");
 
-        var passed = validation.IsValid && structureOk && answersOk;
+        var passed = schemaValidity && structureOk && answersOk && alignment == 100;
         var summary =
-            $"OA {context.Objective.Code}: alineación {alignment}% · indicadores {indicatorCoverage}% · " +
+            $"OA {context.Objective.Code}: schema {(schemaValidity ? "OK" : "FAIL")} · " +
+            $"alineación {alignment}% · indicadores {indicatorCoverage}% · " +
             $"Bloom {cognitiveDiversity}% · ítems {items.Count}/{context.ItemCount}" +
             (passed ? " · OK" : " · revisar");
 
         return new PedagogicalQualityReport
         {
             Passed = passed,
+            SchemaValidity = schemaValidity,
             ObjectiveAlignmentPercent = alignment,
             IndicatorCoveragePercent = indicatorCoverage,
             CognitiveDiversityPercent = cognitiveDiversity,

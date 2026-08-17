@@ -1,0 +1,104 @@
+{
+  "id": "PA-ADV-DUPLICATE",
+  "course": "6° Básico",
+  "subject": "Matemática",
+  "objectiveCode": "MA06 OA 05",
+  "documentType": "LearningGuide",
+  "requestedItemCount": 10,
+  "expectations": {
+    "objectiveCodeMustMatch": true,
+    "minItems": 2,
+    "maxItems": 12,
+    "requireTitle": true,
+    "requireInstructions": true,
+    "multipleChoiceMustHaveOneCorrect": true,
+    "forbidExecutableHtml": true
+  },
+  "sampleDocument": {
+    "curriculum": {
+      "objectiveId": "11111111-1111-1111-1111-111111111111",
+      "objectiveCode": "MA06 OA 05",
+      "curriculumRelease": "demo",
+      "indicatorIds": [
+        "22222222-2222-2222-2222-222222222222"
+      ]
+    },
+    "document": {
+      "title": "Guía: porcentajes básicos",
+      "instructions": "Trabaje en silencio. Tiempo estimado: 40 minutos.",
+      "estimatedDurationMinutes": 40,
+      "totalPoints": 2,
+      "items": [
+        {
+          "order": 1,
+          "type": "MultipleChoice",
+          "statement": "¿Cuánto es el 25% de 80?",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Basic",
+          "points": 1,
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "20",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "25",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "40",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "15",
+              "isCorrect": false
+            }
+          ]
+        },
+        {
+          "order": 2,
+          "type": "MultipleChoice",
+          "statement": "¿Cuánto es el 25% de 80?",
+          "bloomLevel": "Aplicar",
+          "difficulty": "Intermediate",
+          "points": 1,
+          "expectedAnswer": "La décima parte del número",
+          "indicatorIds": [
+            "22222222-2222-2222-2222-222222222222"
+          ],
+          "options": [
+            {
+              "order": 1,
+              "text": "20",
+              "isCorrect": true
+            },
+            {
+              "order": 2,
+              "text": "25",
+              "isCorrect": false
+            },
+            {
+              "order": 3,
+              "text": "40",
+              "isCorrect": false
+            },
+            {
+              "order": 4,
+              "text": "15",
+              "isCorrect": false
+            }
+          ]
+        }
+      ]
+    },
+    "requiresReview": false,
+    "warnings": []
+  }
+}

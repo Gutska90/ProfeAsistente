@@ -31,6 +31,8 @@ public sealed class SubmitPilotSessionReportRequest
     public int MinutesSavedEstimate { get; set; }
     public bool? WouldUseAgain { get; set; }
     public bool? MaterialsUsedInClass { get; set; }
+    /// <summary>Under15 | From15To30 | From30To60 | From1To2Hours | Over2Hours</summary>
+    public string? WithoutAppDurationBucket { get; set; }
     public string? Comment { get; set; }
 }
 
@@ -41,6 +43,32 @@ public sealed class PilotSessionReportDto
     public int MinutesSavedEstimate { get; set; }
     public bool? WouldUseAgain { get; set; }
     public bool? MaterialsUsedInClass { get; set; }
+    public string? WithoutAppDurationBucket { get; set; }
     public string? Comment { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public static class WithoutAppDurationBuckets
+{
+    public const string Under15 = "Under15";
+    public const string From15To30 = "From15To30";
+    public const string From30To60 = "From30To60";
+    public const string From1To2Hours = "From1To2Hours";
+    public const string Over2Hours = "Over2Hours";
+
+    public static readonly IReadOnlyList<string> All =
+        [Under15, From15To30, From30To60, From1To2Hours, Over2Hours];
+
+    public static bool IsValid(string? value) =>
+        string.IsNullOrWhiteSpace(value) || All.Contains(value, StringComparer.OrdinalIgnoreCase);
+
+    public static string Label(string? value) => value switch
+    {
+        Under15 => "<15 min",
+        From15To30 => "15–30 min",
+        From30To60 => "30–60 min",
+        From1To2Hours => "1–2 horas",
+        Over2Hours => ">2 horas",
+        _ => "—"
+    };
 }

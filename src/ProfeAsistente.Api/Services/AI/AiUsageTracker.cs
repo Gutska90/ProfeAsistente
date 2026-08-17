@@ -1,6 +1,7 @@
 using ProfeAsistente.Api.Data;
 using ProfeAsistente.Api.Models.AI;
 using ProfeAsistente.Api.Services.Authorization;
+using ProfeAsistente.Api.Services.DateTimeServices;
 using ProfeAsistente.Shared.Dtos;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,15 +47,18 @@ public sealed class AiUsageTracker : IAiUsageTracker
     private readonly ProfeAsistenteDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IAiCostEstimator _cost;
+    private readonly IApplicationClock _clock;
 
     public AiUsageTracker(
         ProfeAsistenteDbContext db,
         ICurrentUserService current,
-        IAiCostEstimator cost)
+        IAiCostEstimator cost,
+        IApplicationClock clock)
     {
         _db = db;
         _current = current;
         _cost = cost;
+        _clock = clock;
     }
 
     public async Task<AiUsageRecord> BeginAsync(AiUsageBeginRequest request, CancellationToken ct = default)
@@ -75,8 +79,8 @@ public sealed class AiUsageTracker : IAiUsageTracker
             DocumentType = request.DocumentType,
             GenerationType = request.GenerationType,
             UserId = _current.UserId,
-            InstitutionId = _current.ActiveInstitutionId,
-            StartedAt = DateTime.UtcNow
+            InstitutionId = _current.ActiveInstitutionId is Guid iid && iid != Guid.Empty ? iid : null,
+            StartedAt = _clock.UtcNow
         };
         _db.AiUsageRecords.Add(usage);
         await _db.SaveChangesAsync(ct);
@@ -98,7 +102,7 @@ public sealed class AiUsageTracker : IAiUsageTracker
         usage.OutputTokens = outputTokens;
         usage.LatencyMilliseconds = latencyMs;
         usage.EstimatedCostUsd = _cost.EstimateUsd(model ?? usage.Model, inputTokens, outputTokens);
-        usage.CompletedAt = DateTime.UtcNow;
+        usage.CompletedAt = _clock.UtcNow;
         usage.ErrorCode = errorCode;
         if (!string.IsNullOrWhiteSpace(model))
             usage.Model = model;
@@ -107,16 +111,11 @@ public sealed class AiUsageTracker : IAiUsageTracker
 
     public async Task<AiUsageSummaryDto> GetSummaryAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
     {
-        var from = fromUtc ?? DateTime.UtcNow.AddDays(-30);
-        var to = toUtc ?? DateTime.UtcNow.AddDays(1);
+        var from = fromUtc ?? _clock.UtcNow.AddDays(-30);
+        var to = toUtc ?? _clock.UtcNow.AddDays(1);
 
-        var q = _db.AiUsageRecords.AsNoTracking()
-            .Where(r => r.StartedAt >= from && r.StartedAt < to);
-
-        if (_current.ActiveInstitutionId is Guid inst && inst != Guid.Empty)
-            q = q.Where(r => r.InstitutionId == null || r.InstitutionId == inst);
-        if (_current.UserId is Guid uid && !IsPrivilegedViewer())
-            q = q.Where(r => r.UserId == null || r.UserId == uid);
+        var q = ApplyTenantScope(_db.AiUsageRecords.AsNoTracking()
+            .Where(r => r.StartedAt >= from && r.StartedAt < to));
 
         var rows = await q.ToListAsync(ct);
         var byPurpose = rows
@@ -152,11 +151,7 @@ public sealed class AiUsageTracker : IAiUsageTracker
     public async Task<IReadOnlyList<AiUsageRecordDto>> GetRecentAsync(int take = 50, CancellationToken ct = default)
     {
         take = Math.Clamp(take, 1, 200);
-        var q = _db.AiUsageRecords.AsNoTracking().AsQueryable();
-        if (_current.ActiveInstitutionId is Guid inst && inst != Guid.Empty)
-            q = q.Where(r => r.InstitutionId == null || r.InstitutionId == inst);
-        if (_current.UserId is Guid uid && !IsPrivilegedViewer())
-            q = q.Where(r => r.UserId == null || r.UserId == uid);
+        var q = ApplyTenantScope(_db.AiUsageRecords.AsNoTracking());
 
         return await q.OrderByDescending(r => r.StartedAt)
             .Take(take)
@@ -183,8 +178,27 @@ public sealed class AiUsageTracker : IAiUsageTracker
             .ToListAsync(ct);
     }
 
-    private bool IsPrivilegedViewer() =>
-        _current.IsInRole(nameof(Shared.Enums.ApplicationRole.SystemAdministrator))
-        || _current.IsInRole(nameof(Shared.Enums.ApplicationRole.SchoolAdministrator))
+    /// <summary>Aislamiento estricto: sin InstitutionId/UserId nulos mezclados en vistas tenant.</summary>
+    private IQueryable<AiUsageRecord> ApplyTenantScope(IQueryable<AiUsageRecord> q)
+    {
+        if (IsSystemAdmin())
+            return q;
+
+        if (_current.ActiveInstitutionId is Guid inst && inst != Guid.Empty)
+            q = q.Where(r => r.InstitutionId == inst);
+        else
+            q = q.Where(r => false); // sin institución activa no hay telemetría visible
+
+        if (_current.UserId is Guid uid && !IsSchoolOrCurriculumAdmin())
+            q = q.Where(r => r.UserId == uid);
+
+        return q;
+    }
+
+    private bool IsSystemAdmin() =>
+        _current.IsInRole(nameof(Shared.Enums.ApplicationRole.SystemAdministrator));
+
+    private bool IsSchoolOrCurriculumAdmin() =>
+        _current.IsInRole(nameof(Shared.Enums.ApplicationRole.SchoolAdministrator))
         || _current.IsInRole(nameof(Shared.Enums.ApplicationRole.CurriculumAdministrator));
 }

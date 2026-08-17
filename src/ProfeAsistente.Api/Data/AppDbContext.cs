@@ -512,6 +512,7 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Comment).HasMaxLength(1000);
+            e.Property(x => x.WithoutAppDurationBucket).HasMaxLength(40);
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => x.CreatedAt);
         });
