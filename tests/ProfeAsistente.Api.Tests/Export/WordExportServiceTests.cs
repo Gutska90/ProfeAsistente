@@ -220,8 +220,9 @@ public class WordExportServiceTests : IDisposable
 
         return new EducationalDocumentGenerationService(
             _db, new GeminiAiProvider(gemini),
-            new EducationalDocumentContextBuilder(_db, NullLogger<EducationalDocumentContextBuilder>.Instance),
+            new EducationalDocumentContextBuilder(_db, new AiContextSanitizer(), NullLogger<EducationalDocumentContextBuilder>.Instance),
             new EducationalDocumentGenerationValidator(new EducationalItemSimilarityService()),
+            new PedagogicalQualityEvaluator(),
             Options.Create(new GeminiOptions
             {
                 ApiKeyEnvironmentVariable = "GEMINI_API_KEY",
@@ -234,7 +235,8 @@ public class WordExportServiceTests : IDisposable
             Options.Create(new AiUsageOptions()),
             new FakeHostEnv { ContentRootPath = _root },
             NullLogger<EducationalDocumentGenerationService>.Instance,
-            new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService());
+            new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService(),
+            new AiCostEstimator(Options.Create(new AiUsageOptions())));
     }
 
     private static string BuildAssessmentJson(Guid oaId, string code, string release, List<Guid> indicatorIds, string secret)

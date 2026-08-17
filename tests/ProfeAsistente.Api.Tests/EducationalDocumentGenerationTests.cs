@@ -188,6 +188,70 @@ public class EducationalDocumentGenerationTests : IDisposable
     }
 
     [Fact]
+    public async Task Reuse_CopiesToAnotherClass_WithLineageAndCurrentFlag()
+    {
+        Environment.SetEnvironmentVariable("GEMINI_API_KEY", "test-key-not-real");
+        var planes = new PlanificacionService(_db, new PlanificacionRepository(_db), new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService(), new ProfeAsistente.Api.Tests.TestDoubles.AllowAllResourceAuthorizationService());
+        var planDto = await planes.CrearAsync(new CrearPlanificacionRequest
+        {
+            NivelId = DemoCurriculumSeed.NivelId,
+            AsignaturaId = DemoCurriculumSeed.NivelAsignaturaId,
+            UnidadId = DemoCurriculumSeed.UnidadId,
+            Nombre = "Plan reuse test",
+            FechaInicio = new DateOnly(2026, 4, 1),
+            FechaFin = new DateOnly(2026, 4, 30)
+        });
+        var clases = new ClaseService(_db, new PlanificacionRepository(_db), new ClaseRepository(_db));
+        var indicators = await _db.IndicadoresEvaluacion
+            .Where(i => i.ObjetivoAprendizajeId == DemoCurriculumSeed.Oa1Id)
+            .Select(i => i.Id).Take(2).ToListAsync();
+        var claseA = await clases.CrearAsync(planDto.Id, new CrearClaseRequest
+        {
+            ObjetivoAprendizajeId = DemoCurriculumSeed.Oa1Id,
+            NivelBloom = "Comprender",
+            IndicadorEvaluacionIds = indicators
+        });
+        var claseB = await clases.CrearAsync(planDto.Id, new CrearClaseRequest
+        {
+            ObjetivoAprendizajeId = DemoCurriculumSeed.Oa1Id,
+            NivelBloom = "Comprender",
+            IndicadorEvaluacionIds = indicators
+        });
+
+        var oa = await _db.ObjetivosAprendizaje.FirstAsync(o => o.Id == DemoCurriculumSeed.Oa1Id);
+        var service = BuildService(BuildAssessmentJson(oa.Id, oa.Codigo, oa.Version, indicators));
+        var generated = await service.GenerateAsync(claseA.Id, new GenerateEducationalDocumentRequest
+        {
+            DocumentType = EducationalDocumentType.Exercises,
+            ItemCount = 2,
+            EvaluationIndicatorIds = indicators
+        });
+
+        var reused = await service.ReuseAsync(generated.DocumentId, new ReuseEducationalDocumentRequest
+        {
+            TargetClassId = claseB.Id,
+            SetAsCurrent = true
+        });
+
+        Assert.Equal(claseB.Id, reused.ClassId);
+        Assert.Equal(generated.DocumentId, reused.SourceDocumentId);
+        Assert.False(reused.ObjectiveChanged);
+        Assert.NotNull(reused.Document);
+        Assert.True(reused.Document!.IsCurrentVersion);
+        Assert.Equal(2, reused.Document.Items.Count);
+
+        var targets = await service.ListReuseTargetsAsync(generated.DocumentId);
+        Assert.Contains(targets, t => t.ClassId == claseB.Id);
+
+        var template = await service.SaveAsTemplateAsync(generated.DocumentId);
+        Assert.True(template.IsTemplate);
+        Assert.Equal(generated.DocumentId, template.SourceDocumentId);
+
+        var libraryTemplates = await service.ListLibraryAsync(templatesOnly: true);
+        Assert.Contains(libraryTemplates, m => m.Id == template.Id && m.IsTemplate);
+    }
+
+    [Fact]
     public void OptionalLiveGeminiDocument_SkippedUnlessEnabled()
     {
         var run = string.Equals(
@@ -228,8 +292,9 @@ public class EducationalDocumentGenerationTests : IDisposable
         return new EducationalDocumentGenerationService(
             _db,
             new GeminiAiProvider(gemini),
-            new EducationalDocumentContextBuilder(_db, NullLogger<EducationalDocumentContextBuilder>.Instance),
+            new EducationalDocumentContextBuilder(_db, new AiContextSanitizer(), NullLogger<EducationalDocumentContextBuilder>.Instance),
             new EducationalDocumentGenerationValidator(new EducationalItemSimilarityService()),
+            new PedagogicalQualityEvaluator(),
             Options.Create(new GeminiOptions
             {
                 ApiKeyEnvironmentVariable = "GEMINI_API_KEY",
@@ -242,7 +307,8 @@ public class EducationalDocumentGenerationTests : IDisposable
             Options.Create(new AiUsageOptions()),
             new FakeHostEnv { ContentRootPath = _root },
             NullLogger<EducationalDocumentGenerationService>.Instance,
-            new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService());
+            new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService(),
+            new AiCostEstimator(Options.Create(new AiUsageOptions())));
     }
 
     private async Task<ProfeAsistente.Api.Models.Clase> CreateClassAsync()

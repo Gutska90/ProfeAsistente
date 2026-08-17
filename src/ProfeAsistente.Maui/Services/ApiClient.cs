@@ -45,8 +45,15 @@ public interface IApiClient
     Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetEducationalDocumentsAsync(
         Guid classId, CancellationToken ct = default);
     Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetMaterialLibraryAsync(
-        Guid? courseId = null, string? type = null, string? search = null, CancellationToken ct = default);
+        Guid? courseId = null, string? type = null, string? search = null, bool templatesOnly = false, CancellationToken ct = default);
     Task<EducationalDocumentDetailDto?> GetEducationalDocumentAsync(Guid documentId, CancellationToken ct = default);
+    Task<ReuseEducationalDocumentResultDto> ReuseEducationalDocumentAsync(
+        Guid documentId, ReuseEducationalDocumentRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<ReuseTargetClassDto>> GetReuseTargetsAsync(Guid documentId, CancellationToken ct = default);
+    Task<EducationalDocumentDetailDto> SaveEducationalDocumentAsTemplateAsync(Guid documentId, CancellationToken ct = default);
+    Task<EducationalDocumentDetailDto> DuplicateEducationalDocumentAsync(
+        Guid documentId, DuplicateEducationalDocumentRequest? request = null, CancellationToken ct = default);
+    Task<EducationalDocumentDetailDto> SetCurrentEducationalDocumentAsync(Guid documentId, CancellationToken ct = default);
     Task<EducationalDocumentStudentViewDto?> GetEducationalDocumentStudentViewAsync(
         Guid documentId, CancellationToken ct = default);
     Task<EducationalDocumentDetailDto> UpdateEducationalDocumentAsync(
@@ -62,6 +69,8 @@ public interface IApiClient
     Task<AnswerKeyDto> GetEducationalAnswerKeyAsync(Guid documentId, CancellationToken ct = default);
     Task<EducationalDocumentValidationResultDto> ValidateEducationalDocumentAsync(
         Guid documentId, CancellationToken ct = default);
+    Task<MaterialFeedbackDto> SubmitMaterialFeedbackAsync(
+        Guid documentId, SubmitMaterialFeedbackRequest request, CancellationToken ct = default);
 
     Task<DocumentoDto?> GetDocumentoAsync(Guid id, CancellationToken ct = default);
     Task<DocumentoDto> ActualizarDocumentoAsync(Guid id, ActualizarDocumentoRequest request, CancellationToken ct = default);
@@ -151,6 +160,9 @@ public interface IApiClient
     Task<IReadOnlyList<AssessmentScoreDto>> GetAssessmentScoresAsync(Guid assessmentId, CancellationToken ct = default);
     Task SaveAssessmentScoresAsync(Guid assessmentId, IReadOnlyList<SaveAssessmentScoreRequest> scores, CancellationToken ct = default);
     Task<AssessmentEvidenceSummaryDto?> GetAssessmentEvidenceAsync(Guid assessmentId, CancellationToken ct = default);
+
+    Task<PilotMetricsDto> GetPilotMetricsAsync(DateTime? fromUtc = null, DateTime? toUtc = null, CancellationToken ct = default);
+    Task<PilotSessionReportDto> SubmitPilotSessionReportAsync(SubmitPilotSessionReportRequest request, CancellationToken ct = default);
 }
 
 public class ApiClient : IApiClient
@@ -338,12 +350,13 @@ public class ApiClient : IApiClient
                $"api/clases/{classId}/educational-documents", JsonOptions, ct) ?? [];
 
     public async Task<IReadOnlyList<EducationalDocumentSummaryDto>> GetMaterialLibraryAsync(
-        Guid? courseId = null, string? type = null, string? search = null, CancellationToken ct = default)
+        Guid? courseId = null, string? type = null, string? search = null, bool templatesOnly = false, CancellationToken ct = default)
     {
         var qs = new List<string>();
         if (courseId is Guid c) qs.Add($"courseId={c}");
         if (!string.IsNullOrWhiteSpace(type)) qs.Add($"type={Uri.EscapeDataString(type)}");
         if (!string.IsNullOrWhiteSpace(search)) qs.Add($"q={Uri.EscapeDataString(search)}");
+        if (templatesOnly) qs.Add("templatesOnly=true");
         var suffix = qs.Count == 0 ? string.Empty : "?" + string.Join("&", qs);
         return await _http.GetFromJsonAsync<List<EducationalDocumentSummaryDto>>(
                    $"api/biblioteca/materiales{suffix}", JsonOptions, ct) ?? [];
@@ -356,6 +369,51 @@ public class ApiClient : IApiClient
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
         await EnsureSuccess(response, ct);
         return await response.Content.ReadFromJsonAsync<EducationalDocumentDetailDto>(JsonOptions, ct);
+    }
+
+    public async Task<ReuseEducationalDocumentResultDto> ReuseEducationalDocumentAsync(
+        Guid documentId, ReuseEducationalDocumentRequest request, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsJsonAsync(
+            $"api/educational-documents/{documentId}/reuse", request, JsonOptions, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<ReuseEducationalDocumentResultDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía al reutilizar material.");
+    }
+
+    public async Task<IReadOnlyList<ReuseTargetClassDto>> GetReuseTargetsAsync(
+        Guid documentId, CancellationToken ct = default)
+        => await _http.GetFromJsonAsync<List<ReuseTargetClassDto>>(
+               $"api/educational-documents/{documentId}/reuse-targets", JsonOptions, ct) ?? [];
+
+    public async Task<EducationalDocumentDetailDto> SaveEducationalDocumentAsTemplateAsync(
+        Guid documentId, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsync(
+            $"api/educational-documents/{documentId}/save-as-template", null, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<EducationalDocumentDetailDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía al guardar plantilla.");
+    }
+
+    public async Task<EducationalDocumentDetailDto> DuplicateEducationalDocumentAsync(
+        Guid documentId, DuplicateEducationalDocumentRequest? request = null, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsJsonAsync(
+            $"api/educational-documents/{documentId}/duplicate", request ?? new DuplicateEducationalDocumentRequest(), JsonOptions, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<EducationalDocumentDetailDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía al duplicar material.");
+    }
+
+    public async Task<EducationalDocumentDetailDto> SetCurrentEducationalDocumentAsync(
+        Guid documentId, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsync(
+            $"api/educational-documents/{documentId}/set-current", null, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<EducationalDocumentDetailDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía al marcar versión actual.");
     }
 
     public async Task<EducationalDocumentStudentViewDto?> GetEducationalDocumentStudentViewAsync(
@@ -432,6 +490,16 @@ public class ApiClient : IApiClient
         await EnsureSuccess(response, ct);
         return (await response.Content.ReadFromJsonAsync<EducationalDocumentValidationResultDto>(JsonOptions, ct))
                ?? throw new InvalidOperationException("Respuesta vacía de validación.");
+    }
+
+    public async Task<MaterialFeedbackDto> SubmitMaterialFeedbackAsync(
+        Guid documentId, SubmitMaterialFeedbackRequest request, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsJsonAsync(
+            $"api/educational-documents/{documentId}/feedback", request, JsonOptions, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<MaterialFeedbackDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía de feedback.");
     }
 
     public async Task<DocumentoDto> GenerarMaterialClaseAsync(Guid id, GenerarMaterialClaseRequest request, CancellationToken ct = default)
@@ -963,6 +1031,26 @@ public class ApiClient : IApiClient
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
         await EnsureSuccess(response, ct);
         return await response.Content.ReadFromJsonAsync<AssessmentEvidenceSummaryDto>(JsonOptions, ct);
+    }
+
+    public async Task<PilotMetricsDto> GetPilotMetricsAsync(
+        DateTime? fromUtc = null, DateTime? toUtc = null, CancellationToken ct = default)
+    {
+        var qs = new List<string>();
+        if (fromUtc is DateTime f) qs.Add($"fromUtc={Uri.EscapeDataString(f.ToString("o"))}");
+        if (toUtc is DateTime t) qs.Add($"toUtc={Uri.EscapeDataString(t.ToString("o"))}");
+        var suffix = qs.Count == 0 ? string.Empty : "?" + string.Join("&", qs);
+        return await _http.GetFromJsonAsync<PilotMetricsDto>($"api/pilot/metrics{suffix}", JsonOptions, ct)
+               ?? new PilotMetricsDto();
+    }
+
+    public async Task<PilotSessionReportDto> SubmitPilotSessionReportAsync(
+        SubmitPilotSessionReportRequest request, CancellationToken ct = default)
+    {
+        using var response = await _http.PostAsJsonAsync("api/pilot/session-reports", request, JsonOptions, ct);
+        await EnsureSuccess(response, ct);
+        return (await response.Content.ReadFromJsonAsync<PilotSessionReportDto>(JsonOptions, ct))
+               ?? throw new InvalidOperationException("Respuesta vacía al registrar sesión piloto.");
     }
 
     private async Task<ImportSummaryDto> PostImportActionAsync(Guid batchId, string action, CancellationToken ct)

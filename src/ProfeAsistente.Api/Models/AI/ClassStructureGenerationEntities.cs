@@ -66,9 +66,16 @@ public class AiUsageRecord
 {
     public Guid Id { get; set; }
     public string OperationType { get; set; } = "ClassStructure";
+    /// <summary>Propósito pedagógico normalizado (ClassPlan, Guide, Assessment, …).</summary>
+    public string Purpose { get; set; } = string.Empty;
+    public string PromptId { get; set; } = string.Empty;
+    public string PromptVersion { get; set; } = string.Empty;
+    public Guid? UserId { get; set; }
+    public Guid? InstitutionId { get; set; }
     public Guid? ClassId { get; set; }
     public Guid? DocumentId { get; set; }
     public Guid? ItemId { get; set; }
+    public Guid? GenerationId { get; set; }
     public string? DocumentType { get; set; }
     public string? GenerationType { get; set; }
     public string Provider { get; set; } = "Gemini";
@@ -77,6 +84,9 @@ public class AiUsageRecord
     public DateTime? CompletedAt { get; set; }
     public int? InputTokens { get; set; }
     public int? OutputTokens { get; set; }
+    public long LatencyMilliseconds { get; set; }
+    /// <summary>Costo estimado USD (no facturación real; precios configurables).</summary>
+    public decimal? EstimatedCostUsd { get; set; }
     public bool Success { get; set; }
     public string? ErrorCode { get; set; }
 }

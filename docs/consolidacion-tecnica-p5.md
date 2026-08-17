@@ -20,7 +20,7 @@ Deuda técnica del MVP (P0–P4) sin cambiar el producto: servicios más chicos,
 
 ## Fuera de P5
 
-- Rename de namespaces/solución `ProfeAsistente` → `ProfeAsistente`
+- Rename de solución (hecho en P8)
 - Migración de datos Documento → EducationalDocument
 - Microservicios, SIGE, ERP escolar
 

@@ -5,6 +5,7 @@ using ProfeAsistente.Api.Models.Curriculum;
 using ProfeAsistente.Api.Models.Export;
 using ProfeAsistente.Api.Models.Identity;
 using ProfeAsistente.Api.Models.Institutions;
+using ProfeAsistente.Api.Models.Pilot;
 using ProfeAsistente.Api.Models.Planning;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -50,7 +51,9 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
     public DbSet<EducationalItemIndicator> EducationalItemIndicators => Set<EducationalItemIndicator>();
     public DbSet<AssessmentSpecification> AssessmentSpecifications => Set<AssessmentSpecification>();
     public DbSet<EducationalDocumentRevision> EducationalDocumentRevisions => Set<EducationalDocumentRevision>();
+    public DbSet<EducationalDocumentFeedback> EducationalDocumentFeedbacks => Set<EducationalDocumentFeedback>();
     public DbSet<DocumentExport> DocumentExports => Set<DocumentExport>();
+    public DbSet<PilotSessionReport> PilotSessionReports => Set<PilotSessionReport>();
 
     public DbSet<Documento> Documentos => Set<Documento>();
     public DbSet<DocumentoObjetivoAprendizaje> DocumentoObjetivos => Set<DocumentoObjetivoAprendizaje>();
@@ -390,14 +393,21 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.OperationType).HasMaxLength(80).IsRequired();
+            e.Property(x => x.Purpose).HasMaxLength(40).IsRequired();
+            e.Property(x => x.PromptId).HasMaxLength(80).IsRequired();
+            e.Property(x => x.PromptVersion).HasMaxLength(80).IsRequired();
             e.Property(x => x.Provider).HasMaxLength(40).IsRequired();
             e.Property(x => x.Model).HasMaxLength(80).IsRequired();
             e.Property(x => x.ErrorCode).HasMaxLength(80);
             e.Property(x => x.DocumentType).HasMaxLength(40);
             e.Property(x => x.GenerationType).HasMaxLength(40);
+            e.Property(x => x.EstimatedCostUsd).HasPrecision(18, 6);
             e.HasIndex(x => new { x.ClassId, x.StartedAt });
             e.HasIndex(x => x.OperationType);
             e.HasIndex(x => new { x.DocumentId, x.StartedAt });
+            e.HasIndex(x => new { x.InstitutionId, x.StartedAt });
+            e.HasIndex(x => new { x.UserId, x.StartedAt });
+            e.HasIndex(x => new { x.Purpose, x.StartedAt });
         });
 
         modelBuilder.Entity<EducationalDocument>(e =>
@@ -415,6 +425,8 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
             e.Property(x => x.RowVersion).IsConcurrencyToken();
             e.HasIndex(x => new { x.ClassId, x.DocumentType, x.IsCurrentVersion });
             e.HasIndex(x => new { x.ClassId, x.Status });
+            e.HasIndex(x => x.SourceDocumentId);
+            e.HasIndex(x => new { x.IsTemplate, x.UpdatedAt });
             e.HasMany(x => x.Items).WithOne(i => i.Document).HasForeignKey(i => i.EducationalDocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Generations).WithOne(g => g.Document).HasForeignKey(g => g.EducationalDocumentId)
@@ -422,6 +434,8 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
             e.HasMany(x => x.Specifications).WithOne(s => s.Document).HasForeignKey(s => s.EducationalDocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Revisions).WithOne(r => r.Document).HasForeignKey(r => r.EducationalDocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.FeedbackEntries).WithOne(f => f.Document).HasForeignKey(f => f.EducationalDocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -470,6 +484,15 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
             e.HasIndex(x => new { x.EducationalDocumentId, x.RevisionNumber }).IsUnique();
         });
 
+        modelBuilder.Entity<EducationalDocumentFeedback>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.EducationalDocumentId);
+            e.Property(x => x.Reason).HasMaxLength(40);
+            e.Property(x => x.Comment).HasMaxLength(1000);
+            e.Property(x => x.PromptVersion).HasMaxLength(80).IsRequired();
+        });
+
         modelBuilder.Entity<DocumentExport>(e =>
         {
             e.HasKey(x => x.Id);
@@ -483,6 +506,14 @@ public class ProfeAsistenteDbContext : IdentityDbContext<ApplicationUser, Applic
             e.HasIndex(x => x.PlanningId);
             e.HasIndex(x => x.ClassId);
             e.HasIndex(x => x.EducationalDocumentId);
+        });
+
+        modelBuilder.Entity<PilotSessionReport>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Comment).HasMaxLength(1000);
+            e.HasIndex(x => new { x.UserId, x.CreatedAt });
+            e.HasIndex(x => x.CreatedAt);
         });
 
         modelBuilder.Entity<DocumentoObjetivoAprendizaje>(e =>

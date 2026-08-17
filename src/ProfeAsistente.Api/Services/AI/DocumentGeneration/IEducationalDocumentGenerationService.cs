@@ -18,6 +18,7 @@ public interface IEducationalDocumentGenerationService
         Guid? courseId = null,
         EducationalDocumentType? documentType = null,
         string? search = null,
+        bool templatesOnly = false,
         CancellationToken cancellationToken = default);
 
     Task<EducationalDocumentDetailDto?> GetAsync(
@@ -42,6 +43,19 @@ public interface IEducationalDocumentGenerationService
         Guid documentId, CancellationToken cancellationToken = default);
 
     Task<EducationalDocumentDetailDto> DuplicateAsync(
+        Guid documentId,
+        DuplicateEducationalDocumentRequest? request = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ReuseEducationalDocumentResultDto> ReuseAsync(
+        Guid documentId,
+        ReuseEducationalDocumentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ReuseTargetClassDto>> ListReuseTargetsAsync(
+        Guid documentId, CancellationToken cancellationToken = default);
+
+    Task<EducationalDocumentDetailDto> SaveAsTemplateAsync(
         Guid documentId, CancellationToken cancellationToken = default);
 
     Task<EducationalItemDto> AddItemAsync(
@@ -68,6 +82,11 @@ public interface IEducationalDocumentGenerationService
         Guid documentId, CancellationToken cancellationToken = default);
 
     Task SoftDeleteAsync(Guid documentId, CancellationToken cancellationToken = default);
+
+    Task<MaterialFeedbackDto> SubmitFeedbackAsync(
+        Guid documentId,
+        SubmitMaterialFeedbackRequest request,
+        CancellationToken cancellationToken = default);
 
     Task MarkOutdatedIfConfigurationChangedAsync(
         Guid classId, CancellationToken cancellationToken = default);

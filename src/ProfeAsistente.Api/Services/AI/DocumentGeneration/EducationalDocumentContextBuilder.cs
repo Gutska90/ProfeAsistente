@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using ProfeAsistente.Api.Data;
 using ProfeAsistente.Api.Models.AI;
 using ProfeAsistente.Shared.Dtos;
@@ -13,19 +12,18 @@ namespace ProfeAsistente.Api.Services.AI.DocumentGeneration;
 public sealed class EducationalDocumentContextBuilder
 {
     private const int MaxFreeTextLength = 2000;
-    private static readonly Regex HtmlTagRegex = new(@"<[^>]+>", RegexOptions.Compiled);
-    private static readonly Regex ScriptRegex = new(
-        @"<\s*script\b|javascript\s*:|on\w+\s*=",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly ProfeAsistenteDbContext _db;
+    private readonly IAiContextSanitizer _sanitizer;
     private readonly ILogger<EducationalDocumentContextBuilder> _logger;
 
     public EducationalDocumentContextBuilder(
         ProfeAsistenteDbContext db,
+        IAiContextSanitizer sanitizer,
         ILogger<EducationalDocumentContextBuilder> logger)
     {
         _db = db;
+        _sanitizer = sanitizer;
         _logger = logger;
     }
 
@@ -110,10 +108,10 @@ public sealed class EducationalDocumentContextBuilder
             warnings.Add("La estructura vigente está desactualizada.");
 
         var release = await ResolveReleaseAsync(oa, cancellationToken);
-        var teacher = Sanitize(request.TeacherInstructions);
-        var student = Sanitize(request.StudentInstructions);
-        if (teacher.Suspicious) warnings.Add("Instrucciones del profesor potencialmente sospechosas; se trataron como contexto.");
-        if (student.Suspicious) warnings.Add("Instrucciones al estudiante potencialmente sospechosas; se trataron como contexto.");
+        var teacher = _sanitizer.Sanitize(request.TeacherInstructions, nameof(request.TeacherInstructions), maxLength: MaxFreeTextLength);
+        var student = _sanitizer.Sanitize(request.StudentInstructions, nameof(request.StudentInstructions), maxLength: MaxFreeTextLength);
+        warnings.AddRange(teacher.Warnings);
+        warnings.AddRange(student.Warnings);
 
         var allowed = request.AllowedItemTypes.Count > 0
             ? request.AllowedItemTypes.Distinct().ToList()
@@ -195,13 +193,8 @@ public sealed class EducationalDocumentContextBuilder
         return Convert.ToHexString(hash);
     }
 
-    public static string PromptVersionFor(EducationalDocumentType type) => type switch
-    {
-        EducationalDocumentType.LearningGuide => "learning-guide-v1",
-        EducationalDocumentType.Exercises => "exercises-v1",
-        EducationalDocumentType.Assessment => "assessment-v1",
-        _ => "learning-guide-v1"
-    };
+    public static string PromptVersionFor(EducationalDocumentType type)
+        => PromptCatalog.ForDocument(type).PromptVersion;
 
     private static List<EducationalItemType> DefaultItemTypes(EducationalDocumentType type) => type switch
     {
@@ -255,20 +248,6 @@ public sealed class EducationalDocumentContextBuilder
         }
 
         return oa.Version;
-    }
-
-    private static (string? Text, bool Suspicious) Sanitize(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return (null, false);
-        var text = input.Trim();
-        if (text.Length > MaxFreeTextLength) text = text[..MaxFreeTextLength];
-        text = HtmlTagRegex.Replace(text, string.Empty);
-        var suspicious = ScriptRegex.IsMatch(input)
-                         || text.Contains("ignore previous", StringComparison.OrdinalIgnoreCase)
-                         || text.Contains("ignora el currículum", StringComparison.OrdinalIgnoreCase)
-                         || text.Contains("system prompt", StringComparison.OrdinalIgnoreCase)
-                         || text.Contains("api key", StringComparison.OrdinalIgnoreCase);
-        return (text, suspicious);
     }
 
     private static string? TruncateJson(string? json)

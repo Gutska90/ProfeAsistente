@@ -30,32 +30,38 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
     private readonly IAiProvider _ai;
     private readonly EducationalDocumentContextBuilder _contextBuilder;
     private readonly IEducationalDocumentGenerationValidator _validator;
+    private readonly IPedagogicalQualityEvaluator _quality;
     private readonly GeminiOptions _geminiOptions;
     private readonly AiUsageOptions _usageOptions;
     private readonly IHostEnvironment _env;
     private readonly ILogger<EducationalDocumentGenerationService> _logger;
     private readonly ICurrentUserService _current;
+    private readonly IAiCostEstimator _cost;
 
     public EducationalDocumentGenerationService(
         ProfeAsistenteDbContext db,
         IAiProvider ai,
         EducationalDocumentContextBuilder contextBuilder,
         IEducationalDocumentGenerationValidator validator,
+        IPedagogicalQualityEvaluator quality,
         IOptions<GeminiOptions> geminiOptions,
         IOptions<AiUsageOptions> usageOptions,
         IHostEnvironment env,
         ILogger<EducationalDocumentGenerationService> logger,
-        ICurrentUserService current)
+        ICurrentUserService current,
+        IAiCostEstimator cost)
     {
         _db = db;
         _ai = ai;
         _contextBuilder = contextBuilder;
         _validator = validator;
+        _quality = quality;
         _geminiOptions = geminiOptions.Value;
         _usageOptions = usageOptions.Value;
         _env = env;
         _logger = logger;
         _current = current;
+        _cost = cost;
     }
 
     public async Task<EducationalDocumentGenerationResultDto> GenerateAsync(
@@ -128,16 +134,23 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         };
         _db.EducationalDocumentGenerations.Add(generation);
 
+        var (promptId, promptVersion) = PromptCatalog.ForDocument(request.DocumentType);
         var usage = new AiUsageRecord
         {
             Id = Guid.NewGuid(),
             OperationType = "EducationalDocument",
+            Purpose = PromptCatalog.PurposeForDocument(request.DocumentType, request.TeacherInstructions),
+            PromptId = promptId,
+            PromptVersion = promptVersion,
             ClassId = classId,
             DocumentId = document.Id,
+            GenerationId = generation.Id,
             DocumentType = request.DocumentType.ToString(),
             GenerationType = nameof(AiDocumentGenerationType.CompleteDocument),
             Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
+            UserId = _current.UserId,
+            InstitutionId = _current.ActiveInstitutionId is Guid iid && iid != Guid.Empty ? iid : null,
             StartedAt = DateTime.UtcNow
         };
         _db.AiUsageRecords.Add(usage);
@@ -237,6 +250,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         Guid? courseId = null,
         EducationalDocumentType? documentType = null,
         string? search = null,
+        bool templatesOnly = false,
         CancellationToken cancellationToken = default)
     {
         var userId = _current.UserId;
@@ -256,6 +270,8 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             .ToListAsync(cancellationToken);
 
         var query = QuerySummaries().Where(d => classIds.Contains(d.ClassId));
+        if (templatesOnly)
+            query = query.Where(d => d.IsTemplate);
         if (documentType is EducationalDocumentType type)
             query = query.Where(d => d.DocumentType == type);
         if (!string.IsNullOrWhiteSpace(search))
@@ -308,7 +324,9 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
                CourseName = course != null ? course.DisplayName : null,
                SubjectName = asig.Nombre,
                UnitName = u.Nombre,
-               ObjectiveCode = d.ObjectiveCode
+               ObjectiveCode = d.ObjectiveCode,
+               SourceDocumentId = d.SourceDocumentId,
+               IsTemplate = d.IsTemplate
            };
 
     private static EducationalDocumentSummaryDto MapSummary(DocumentSummaryRow d)
@@ -351,7 +369,9 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             SubjectName = d.SubjectName,
             UnitName = d.UnitName,
             ObjectiveCode = d.ObjectiveCode,
-            ContextLine = string.Join(" · ", parts)
+            ContextLine = string.Join(" · ", parts),
+            SourceDocumentId = d.SourceDocumentId,
+            IsTemplate = d.IsTemplate
         };
     }
 
@@ -379,6 +399,8 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         public string? SubjectName { get; init; }
         public string? UnitName { get; init; }
         public string? ObjectiveCode { get; init; }
+        public Guid? SourceDocumentId { get; init; }
+        public bool IsTemplate { get; init; }
     }
 
     public async Task<EducationalDocumentDetailDto?> GetAsync(
@@ -544,26 +566,190 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
     }
 
     public async Task<EducationalDocumentDetailDto> DuplicateAsync(
+        Guid documentId,
+        DuplicateEducationalDocumentRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        var source = await LoadDocumentGraphAsync(documentId, cancellationToken);
+        var copy = await CloneToClassAsync(
+            source,
+            source.ClassId,
+            source.Title + " (copia)",
+            setAsCurrent: request?.SetAsCurrent == true,
+            markAsTemplate: false,
+            extraWarnings: null,
+            cancellationToken);
+        return (await GetAsync(copy.Id, cancellationToken))!;
+    }
+
+    public async Task<ReuseEducationalDocumentResultDto> ReuseAsync(
+        Guid documentId,
+        ReuseEducationalDocumentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.TargetClassId == Guid.Empty)
+            throw new EducationalDocumentGenerationException("Indique la clase destino.", "TargetClassRequired", 400);
+
+        var source = await LoadDocumentGraphAsync(documentId, cancellationToken);
+        var target = await _db.Clases.AsNoTracking()
+                         .Include(c => c.ObjetivoAprendizaje)
+                         .FirstOrDefaultAsync(c => c.Id == request.TargetClassId, cancellationToken)
+                     ?? throw new EducationalDocumentGenerationException("Clase destino no encontrada.", "TargetClassNotFound", 404);
+
+        var targetCode = target.ObjetivoAprendizaje?.Codigo ?? source.ObjectiveCode;
+        var objectiveChanged = target.ObjetivoAprendizajeId != source.ObjectiveId;
+        var warnings = new List<string>();
+        if (objectiveChanged)
+        {
+            warnings.Add(
+                $"El OA destino ({targetCode}) difiere del material original ({source.ObjectiveCode}). Revise ítems e indicadores.");
+        }
+
+        var title = string.IsNullOrWhiteSpace(request.Title)
+            ? source.Title
+            : request.Title.Trim();
+        if (request.TargetClassId != source.ClassId && string.IsNullOrWhiteSpace(request.Title))
+            title = source.Title; // keep original title when reusing across classes
+
+        var copy = await CloneToClassAsync(
+            source,
+            request.TargetClassId,
+            title,
+            setAsCurrent: request.SetAsCurrent,
+            markAsTemplate: false,
+            extraWarnings: warnings,
+            cancellationToken,
+            overrideObjectiveId: target.ObjetivoAprendizajeId,
+            overrideObjectiveCode: targetCode);
+
+        return new ReuseEducationalDocumentResultDto
+        {
+            DocumentId = copy.Id,
+            ClassId = copy.ClassId,
+            SourceDocumentId = source.Id,
+            ObjectiveChanged = objectiveChanged,
+            SourceObjectiveCode = source.ObjectiveCode,
+            TargetObjectiveCode = targetCode,
+            Warnings = DeserializeWarnings(copy.WarningsJson),
+            Document = await GetAsync(copy.Id, cancellationToken)
+        };
+    }
+
+    public async Task<IReadOnlyList<ReuseTargetClassDto>> ListReuseTargetsAsync(
         Guid documentId, CancellationToken cancellationToken = default)
     {
-        var source = await _db.EducationalDocuments
-                         .Include(d => d.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Options)
-                         .Include(d => d.Items).ThenInclude(i => i.Indicators)
-                         .Include(d => d.Specifications)
+        var source = await _db.EducationalDocuments.AsNoTracking()
                          .FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted, cancellationToken)
                      ?? throw new EducationalDocumentGenerationException("Documento no encontrado.", "DocumentNotFound", 404);
 
+        var sourceClass = await _db.Clases.AsNoTracking()
+                              .FirstOrDefaultAsync(c => c.Id == source.ClassId, cancellationToken)
+                          ?? throw new EducationalDocumentGenerationException("Clase origen no encontrada.", "ClassNotFound", 404);
+
+        var plan = await _db.Planificaciones.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == sourceClass.PlanificacionId, cancellationToken);
+
+        // Prefer same planning; also include other plans of same course/unit for the teacher.
+        var planQuery = _db.Planificaciones.AsNoTracking().Where(p => !p.IsDeleted);
+        if (plan?.SchoolCourseId is Guid courseId)
+            planQuery = planQuery.Where(p => p.SchoolCourseId == courseId || p.Id == sourceClass.PlanificacionId);
+        else if (plan is not null)
+            planQuery = planQuery.Where(p => p.Id == sourceClass.PlanificacionId || p.UnidadId == plan.UnidadId);
+        else
+            planQuery = planQuery.Where(p => p.Id == sourceClass.PlanificacionId);
+
+        var planIds = await planQuery.Select(p => p.Id).ToListAsync(cancellationToken);
+        var rows = await (
+            from c in _db.Clases.AsNoTracking()
+            where planIds.Contains(c.PlanificacionId) && c.Id != source.ClassId
+            join oa in _db.ObjetivosAprendizaje.AsNoTracking() on c.ObjetivoAprendizajeId equals oa.Id
+            join p in _db.Planificaciones.AsNoTracking() on c.PlanificacionId equals p.Id
+            join u in _db.Unidades.AsNoTracking() on p.UnidadId equals u.Id
+            join course in _db.SchoolCourses.AsNoTracking() on p.SchoolCourseId equals course.Id into cj
+            from course in cj.DefaultIfEmpty()
+            orderby c.PlanificacionId == sourceClass.PlanificacionId descending,
+                c.ObjetivoAprendizajeId == source.ObjectiveId descending,
+                c.Numero
+            select new ReuseTargetClassDto
+            {
+                ClassId = c.Id,
+                PlanificacionId = c.PlanificacionId,
+                ClassNumber = c.Numero,
+                ClassDate = c.Fecha,
+                ObjectiveCode = oa.Codigo,
+                SameObjective = c.ObjetivoAprendizajeId == source.ObjectiveId,
+                CourseName = course != null ? course.DisplayName : null,
+                UnitName = u.Nombre,
+                Label = ""
+            }).Take(80).ToListAsync(cancellationToken);
+
+        foreach (var r in rows)
+        {
+            var bits = new List<string> { $"Clase {r.ClassNumber}" };
+            if (!string.IsNullOrWhiteSpace(r.CourseName)) bits.Insert(0, r.CourseName!);
+            bits.Add($"OA {r.ObjectiveCode}");
+            if (r.SameObjective) bits.Add("mismo OA");
+            r.Label = string.Join(" · ", bits);
+        }
+
+        return rows;
+    }
+
+    public async Task<EducationalDocumentDetailDto> SaveAsTemplateAsync(
+        Guid documentId, CancellationToken cancellationToken = default)
+    {
+        var source = await LoadDocumentGraphAsync(documentId, cancellationToken);
+        if (source.IsTemplate)
+            return (await GetAsync(source.Id, cancellationToken))!;
+
+        var copy = await CloneToClassAsync(
+            source,
+            source.ClassId,
+            source.Title.EndsWith("(plantilla)", StringComparison.OrdinalIgnoreCase)
+                ? source.Title
+                : source.Title + " (plantilla)",
+            setAsCurrent: false,
+            markAsTemplate: true,
+            extraWarnings: ["Plantilla: use «Usar en otra clase» para copiarla a una clase."],
+            cancellationToken);
+        return (await GetAsync(copy.Id, cancellationToken))!;
+    }
+
+    private async Task<EducationalDocument> LoadDocumentGraphAsync(Guid documentId, CancellationToken ct)
+        => await _db.EducationalDocuments
+               .Include(d => d.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Options)
+               .Include(d => d.Items).ThenInclude(i => i.Indicators)
+               .Include(d => d.Specifications)
+               .FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted, ct)
+           ?? throw new EducationalDocumentGenerationException("Documento no encontrado.", "DocumentNotFound", 404);
+
+    private async Task<EducationalDocument> CloneToClassAsync(
+        EducationalDocument source,
+        Guid targetClassId,
+        string title,
+        bool setAsCurrent,
+        bool markAsTemplate,
+        IReadOnlyList<string>? extraWarnings,
+        CancellationToken ct,
+        Guid? overrideObjectiveId = null,
+        string? overrideObjectiveCode = null)
+    {
+        var warnings = DeserializeWarnings(source.WarningsJson);
+        if (extraWarnings is { Count: > 0 })
+            warnings.AddRange(extraWarnings);
+
+        var objectiveChanged = overrideObjectiveId is Guid oid && oid != source.ObjectiveId;
         var copy = new EducationalDocument
         {
             Id = Guid.NewGuid(),
-            ClassId = source.ClassId,
+            ClassId = targetClassId,
             DocumentType = source.DocumentType,
-            Title = source.Title + " (copia)",
+            Title = title,
             Purpose = source.Purpose,
             Instructions = source.Instructions,
             Status = EducationalDocumentStatus.Draft,
             CurriculumSnapshotId = source.CurriculumSnapshotId,
-            ClassStructureGenerationId = source.ClassStructureGenerationId,
+            ClassStructureGenerationId = targetClassId == source.ClassId ? source.ClassStructureGenerationId : null,
             BloomLevel = source.BloomLevel,
             Difficulty = source.Difficulty,
             EstimatedDurationMinutes = source.EstimatedDurationMinutes,
@@ -572,11 +758,15 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             Model = source.Model,
             PromptVersion = source.PromptVersion,
             CurriculumRelease = source.CurriculumRelease,
-            ObjectiveId = source.ObjectiveId,
-            ObjectiveCode = source.ObjectiveCode,
-            WarningsJson = source.WarningsJson,
+            ObjectiveId = overrideObjectiveId ?? source.ObjectiveId,
+            ObjectiveCode = overrideObjectiveCode ?? source.ObjectiveCode,
+            WarningsJson = JsonSerializer.Serialize(warnings, JsonOptions),
+            QualityReportJson = source.QualityReportJson,
             RequiresReview = true,
-            ConfigurationFingerprint = source.ConfigurationFingerprint,
+            ConfigurationFingerprint = objectiveChanged ? null : source.ConfigurationFingerprint,
+            IsOutdated = objectiveChanged,
+            SourceDocumentId = source.Id,
+            IsTemplate = markAsTemplate,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             IsCurrentVersion = false,
@@ -641,8 +831,20 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             });
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
-        return (await GetAsync(copy.Id, cancellationToken))!;
+        if (setAsCurrent && !markAsTemplate)
+        {
+            foreach (var other in await _db.EducationalDocuments
+                         .Where(d => d.ClassId == targetClassId
+                                     && d.DocumentType == source.DocumentType
+                                     && d.IsCurrentVersion
+                                     && !d.IsDeleted)
+                         .ToListAsync(ct))
+                other.IsCurrentVersion = false;
+            copy.IsCurrentVersion = true;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return copy;
     }
 
     public async Task<EducationalItemDto> AddItemAsync(
@@ -777,10 +979,14 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         var context = await _contextBuilder.BuildAsync(item.Document.ClassId, genRequest, cancellationToken);
         var systemPrompt = await LoadSystemPromptAsync(item.Document.DocumentType, cancellationToken);
         var userPrompt = BuildUserPrompt(context) + "\nRegenera UN solo ítem. Conserva el currículum autorizado.";
+        var (promptId, promptVersion) = PromptCatalog.ForDocument(item.Document.DocumentType);
         var usage = new AiUsageRecord
         {
             Id = Guid.NewGuid(),
             OperationType = "EducationalDocument",
+            Purpose = AiGenerationPurposes.ItemRegenerate,
+            PromptId = promptId,
+            PromptVersion = promptVersion,
             ClassId = item.Document.ClassId,
             DocumentId = item.EducationalDocumentId,
             ItemId = item.Id,
@@ -788,18 +994,19 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             GenerationType = nameof(AiDocumentGenerationType.SingleItem),
             Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
+            UserId = _current.UserId,
+            InstitutionId = _current.ActiveInstitutionId is Guid iid && iid != Guid.Empty ? iid : null,
             StartedAt = DateTime.UtcNow
         };
         _db.AiUsageRecords.Add(usage);
 
+        var sw = Stopwatch.StartNew();
         var result = await _ai.GenerateJsonAsync(systemPrompt, userPrompt, null, cancellationToken);
         var generated = Deserialize(result.Text);
         var validation = _validator.Validate(generated, context);
         if (!validation.IsValid || generated.Document.Items.Count == 0)
         {
-            usage.Success = false;
-            usage.ErrorCode = "AiValidationRejected";
-            usage.CompletedAt = DateTime.UtcNow;
+            CompleteUsage(usage, false, result.InputTokenCount, result.OutputTokenCount, sw.ElapsedMilliseconds, "AiValidationRejected", result.Model);
             await _db.SaveChangesAsync(cancellationToken);
             throw new EducationalDocumentGenerationException(
                 "No se pudo regenerar el ítem con una respuesta válida.", "AiValidationRejected", 422);
@@ -847,10 +1054,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             });
         }
 
-        usage.Success = true;
-        usage.InputTokens = result.InputTokenCount;
-        usage.OutputTokens = result.OutputTokenCount;
-        usage.CompletedAt = DateTime.UtcNow;
+        CompleteUsage(usage, true, result.InputTokenCount, result.OutputTokenCount, sw.ElapsedMilliseconds, model: result.Model);
         RecalculatePoints(item.Document);
         item.Document.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
@@ -1011,6 +1215,19 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         document.TotalPoints = generated.Document.TotalPoints;
         document.RequiresReview = generated.RequiresReview || generated.Warnings.Count > 0;
         document.WarningsJson = JsonSerializer.Serialize(generated.Warnings, JsonOptions);
+        var quality = _quality.Evaluate(
+            new EducationalDocumentValidationResult
+            {
+                IsValid = true,
+                Errors = [],
+                Warnings = generated.Warnings,
+                Normalized = generated
+            },
+            context,
+            generated);
+        document.QualityReportJson = JsonSerializer.Serialize(quality, JsonOptions);
+        if (!quality.Passed)
+            document.RequiresReview = true;
         document.Status = EducationalDocumentStatus.Draft;
         document.IsCurrentVersion = true;
         document.IsOutdated = false;
@@ -1087,10 +1304,7 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         generation.OutputTokenCount = result.OutputTokenCount;
         generation.DurationMilliseconds = elapsedMs;
 
-        usage.Success = true;
-        usage.InputTokens = result.InputTokenCount;
-        usage.OutputTokens = result.OutputTokenCount;
-        usage.CompletedAt = DateTime.UtcNow;
+        CompleteUsage(usage, true, result.InputTokenCount, result.OutputTokenCount, elapsedMs, model: result.Model);
 
         await CreateRevisionAsync(document, "Generación inicial", ct);
         await _db.SaveChangesAsync(ct);
@@ -1116,13 +1330,29 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         document.Status = EducationalDocumentStatus.Draft;
         document.Title = LabelFor(document.DocumentType) + " (error)";
         document.UpdatedAt = DateTime.UtcNow;
-        usage.Success = false;
-        usage.ErrorCode = errorCode;
-        usage.CompletedAt = DateTime.UtcNow;
-        usage.InputTokens = result?.InputTokenCount;
-        usage.OutputTokens = result?.OutputTokenCount;
+        CompleteUsage(usage, false, result?.InputTokenCount, result?.OutputTokenCount, elapsedMs, errorCode, result?.Model);
         try { await _db.SaveChangesAsync(ct); }
         catch (Exception ex) { _logger.LogWarning(ex, "No se pudo persistir fallo de generación"); }
+    }
+
+    private void CompleteUsage(
+        AiUsageRecord usage,
+        bool success,
+        int? inputTokens,
+        int? outputTokens,
+        long latencyMs,
+        string? errorCode = null,
+        string? model = null)
+    {
+        usage.Success = success;
+        usage.InputTokens = inputTokens;
+        usage.OutputTokens = outputTokens;
+        usage.LatencyMilliseconds = latencyMs;
+        usage.EstimatedCostUsd = _cost.EstimateUsd(model ?? usage.Model, inputTokens, outputTokens);
+        usage.CompletedAt = DateTime.UtcNow;
+        usage.ErrorCode = errorCode;
+        if (!string.IsNullOrWhiteSpace(model))
+            usage.Model = model;
     }
 
     private async Task CreateRevisionAsync(EducationalDocument doc, string summary, CancellationToken ct)
@@ -1374,6 +1604,91 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
         };
     }
 
+    public async Task<MaterialFeedbackDto> SubmitFeedbackAsync(
+        Guid documentId,
+        SubmitMaterialFeedbackRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var doc = await _db.EducationalDocuments.FirstOrDefaultAsync(d => d.Id == documentId && !d.IsDeleted, cancellationToken)
+            ?? throw new EducationalDocumentGenerationException("Documento no encontrado.", "DocumentNotFound", 404);
+
+        var reason = string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim();
+        if (reason is not null && !MaterialFeedbackReasons.All.Contains(reason, StringComparer.OrdinalIgnoreCase))
+            throw new EducationalDocumentGenerationException("Motivo de feedback no válido.", "InvalidFeedbackReason", 400);
+
+        if (!request.Useful && reason is null)
+            throw new EducationalDocumentGenerationException(
+                "Indique un motivo cuando el material no le sirvió.", "FeedbackReasonRequired", 400);
+
+        if (_current.UserId is not Guid userId)
+            throw new EducationalDocumentGenerationException("Debe iniciar sesión para enviar feedback.", "Unauthorized", 401);
+
+        var latestGen = await _db.EducationalDocumentGenerations.AsNoTracking()
+            .Where(g => g.EducationalDocumentId == documentId)
+            .OrderByDescending(g => g.GenerationNumber)
+            .Select(g => (Guid?)g.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var entry = new EducationalDocumentFeedback
+        {
+            Id = Guid.NewGuid(),
+            EducationalDocumentId = documentId,
+            GenerationId = latestGen,
+            UserId = userId,
+            Useful = request.Useful,
+            Reason = request.Useful ? null : reason,
+            Comment = TruncateComment(request.Comment),
+            PromptVersion = doc.PromptVersion,
+            CreatedAt = DateTime.UtcNow
+        };
+        _db.EducationalDocumentFeedbacks.Add(entry);
+        await _db.SaveChangesAsync(cancellationToken);
+        return new MaterialFeedbackDto
+        {
+            Id = entry.Id,
+            DocumentId = documentId,
+            Useful = entry.Useful,
+            Reason = entry.Reason,
+            Comment = entry.Comment,
+            PromptVersion = entry.PromptVersion,
+            CreatedAt = entry.CreatedAt
+        };
+    }
+
+    private async Task<MaterialFeedbackDto?> GetMyFeedbackAsync(Guid documentId, CancellationToken ct)
+    {
+        if (_current.UserId is not Guid userId) return null;
+        var f = await _db.EducationalDocumentFeedbacks.AsNoTracking()
+            .Where(x => x.EducationalDocumentId == documentId && x.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (f is null) return null;
+        return new MaterialFeedbackDto
+        {
+            Id = f.Id,
+            DocumentId = f.EducationalDocumentId,
+            Useful = f.Useful,
+            Reason = f.Reason,
+            Comment = f.Comment,
+            PromptVersion = f.PromptVersion,
+            CreatedAt = f.CreatedAt
+        };
+    }
+
+    private static string? TruncateComment(string? comment)
+    {
+        if (string.IsNullOrWhiteSpace(comment)) return null;
+        var c = comment.Trim();
+        return c.Length <= 1000 ? c : c[..1000];
+    }
+
+    private static PedagogicalQualityReport? DeserializeQuality(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonSerializer.Deserialize<PedagogicalQualityReport>(json, JsonOptions); }
+        catch { return null; }
+    }
+
     private async Task<EducationalDocumentDetailDto?> MapDetailAsync(
         Guid documentId, bool includeTeacherFields, CancellationToken ct)
     {
@@ -1411,7 +1726,11 @@ public sealed class EducationalDocumentGenerationService : IEducationalDocumentG
             IsOutdated = doc.IsOutdated,
             RequiresReview = doc.RequiresReview,
             Warnings = DeserializeWarnings(doc.WarningsJson),
+            QualityReport = DeserializeQuality(doc.QualityReportJson),
+            MyFeedback = await GetMyFeedbackAsync(doc.Id, ct),
             RowVersion = Convert.ToBase64String(doc.RowVersion),
+            SourceDocumentId = doc.SourceDocumentId,
+            IsTemplate = doc.IsTemplate,
             CreatedAt = doc.CreatedAt,
             UpdatedAt = doc.UpdatedAt,
             Items = doc.Items.OrderBy(i => i.Order).Select(i => MapItemEntity(i, includeTeacherFields)).ToList(),

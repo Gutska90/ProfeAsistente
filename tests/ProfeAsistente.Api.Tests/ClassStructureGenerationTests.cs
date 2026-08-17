@@ -186,12 +186,14 @@ public class ClassStructureGenerationTests : IDisposable
         return new ClassStructureGenerationService(
             _db,
             new GeminiAiProvider(gemini),
-            new ClassGenerationContextBuilder(_db, NullLogger<ClassGenerationContextBuilder>.Instance),
+            new ClassGenerationContextBuilder(_db, new AiContextSanitizer(), NullLogger<ClassGenerationContextBuilder>.Instance),
             new ClassGenerationValidator(),
             Options.Create(ValidGeminiOptions()),
             Options.Create(new AiUsageOptions()),
             new FakeHostEnv { ContentRootPath = _root },
-            NullLogger<ClassStructureGenerationService>.Instance);
+            NullLogger<ClassStructureGenerationService>.Instance,
+            new ProfeAsistente.Api.Tests.TestDoubles.FakeCurrentUserService(),
+            new AiCostEstimator(Options.Create(new AiUsageOptions())));
     }
 
     private async Task<ProfeAsistente.Api.Models.Clase> CreateClassAsync()

@@ -1,5 +1,6 @@
 using ProfeAsistente.Maui.Services;
 using ProfeAsistente.Maui.Services.Auth;
+using ProfeAsistente.Shared.Dtos;
 
 namespace ProfeAsistente.Maui.Views.Auth;
 
@@ -7,12 +8,15 @@ public partial class UserProfilePage : ContentPage
 {
     private readonly IAuthenticationService _auth;
     private readonly IOfflineSyncService _sync;
+    private readonly IApiClient _api;
+    private bool? _usedInClass = true;
 
-    public UserProfilePage(IAuthenticationService auth, IOfflineSyncService sync)
+    public UserProfilePage(IAuthenticationService auth, IOfflineSyncService sync, IApiClient api)
     {
         InitializeComponent();
         _auth = auth;
         _sync = sync;
+        _api = api;
     }
 
     protected override async void OnAppearing()
@@ -23,6 +27,7 @@ public partial class UserProfilePage : ContentPage
         Email.Text = me?.Email ?? "—";
         Institution.Text = me?.ActiveInstitutionName ?? "Sin establecimiento";
         SyncStatus.Text = _sync.StatusText;
+        await RefreshPilotAsync();
     }
 
     private async void OnSyncNow(object? sender, EventArgs e)
@@ -40,5 +45,59 @@ public partial class UserProfilePage : ContentPage
     {
         await _auth.LogoutAsync();
         await Shell.Current.GoToAsync("//login");
+    }
+
+    private async void OnRefreshPilot(object? sender, EventArgs e) => await RefreshPilotAsync();
+
+    private void OnUsedInClassYes(object? sender, EventArgs e)
+    {
+        _usedInClass = true;
+        PilotMessage.Text = "Marcó: sí usó el material en clase.";
+    }
+
+    private void OnUsedInClassNo(object? sender, EventArgs e)
+    {
+        _usedInClass = false;
+        PilotMessage.Text = "Marcó: aún no usó el material en clase.";
+    }
+
+    private async void OnSubmitPilotReport(object? sender, EventArgs e)
+    {
+        if (!int.TryParse(MinutesSavedEntry.Text?.Trim(), out var minutes) || minutes is < 0 or > 480)
+        {
+            PilotMessage.Text = "Indique minutos entre 0 y 480.";
+            return;
+        }
+
+        try
+        {
+            await _api.SubmitPilotSessionReportAsync(new SubmitPilotSessionReportRequest
+            {
+                MinutesSavedEstimate = minutes,
+                MaterialsUsedInClass = _usedInClass,
+                WouldUseAgain = true
+            });
+            PilotMessage.Text = "Gracias: registramos su ahorro de tiempo.";
+            await RefreshPilotAsync();
+        }
+        catch (Exception ex)
+        {
+            PilotMessage.Text = $"Error: {ex.Message}";
+        }
+    }
+
+    private async Task RefreshPilotAsync()
+    {
+        try
+        {
+            var m = await _api.GetPilotMetricsAsync();
+            PilotSummary.Text = string.IsNullOrWhiteSpace(m.SummaryLine)
+                ? "Sin actividad aún en el periodo."
+                : m.SummaryLine;
+        }
+        catch (Exception ex)
+        {
+            PilotSummary.Text = $"No se pudieron cargar métricas: {ex.Message}";
+        }
     }
 }

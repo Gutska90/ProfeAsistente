@@ -45,4 +45,17 @@ public sealed class AiUsageOptions
     public int MaximumDocumentGenerationsPerClassPerDay { get; set; } = 10;
 
     public int MaximumItemRegenerationsPerDocumentPerDay { get; set; } = 30;
+
+    /// <summary>Precios estimados USD por 1M tokens (configurables; no son facturación real).</summary>
+    public Dictionary<string, AiModelPricingOptions> ModelPricing { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["gemini-2.5-flash"] = new() { InputPerMillionUsd = 0.15m, OutputPerMillionUsd = 0.60m },
+        ["default"] = new() { InputPerMillionUsd = 0.15m, OutputPerMillionUsd = 0.60m }
+    };
+}
+
+public sealed class AiModelPricingOptions
+{
+    public decimal InputPerMillionUsd { get; set; } = 0.15m;
+    public decimal OutputPerMillionUsd { get; set; } = 0.60m;
 }

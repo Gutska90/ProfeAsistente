@@ -39,6 +39,25 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string? mensajeEstado;
     [ObservableProperty] private string? rowVersion;
+    [ObservableProperty] private string? qualitySummary;
+    [ObservableProperty] private bool showFeedbackReasons;
+    [ObservableProperty] private string? feedbackReason;
+    [ObservableProperty] private bool isTemplate;
+    [ObservableProperty] private bool hasLineage;
+    [ObservableProperty] private string? lineageLabel;
+    [ObservableProperty] private bool hasMyFeedback;
+    [ObservableProperty] private string? myFeedbackLabel;
+
+    public IReadOnlyList<string> FeedbackReasonLabels { get; } =
+    [
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.NotAligned),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooHard),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooEasy),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Duplicated),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Unclear),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.ContentError),
+        MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Other)
+    ];
 
     partial void OnDocumentIdTextChanged(string value)
     {
@@ -268,6 +287,193 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task FeedbackUtilAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        try
+        {
+            IsBusy = true;
+            ShowFeedbackReasons = false;
+            await _api.SubmitMaterialFeedbackAsync(DocumentId, new SubmitMaterialFeedbackRequest { Useful = true });
+            HasMyFeedback = true;
+            MyFeedbackLabel = "Gracias: marcó que sí le sirvió.";
+            MensajeEstado = MyFeedbackLabel;
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void FeedbackNoUtil()
+    {
+        ShowFeedbackReasons = true;
+        MensajeEstado = "¿Qué falló? Elija un motivo.";
+    }
+
+    [RelayCommand]
+    private async Task EnviarFeedbackNegativoAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        var reason = FeedbackReason switch
+        {
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.NotAligned) => MaterialFeedbackReasons.NotAligned,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooHard) => MaterialFeedbackReasons.TooHard,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.TooEasy) => MaterialFeedbackReasons.TooEasy,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Duplicated) => MaterialFeedbackReasons.Duplicated,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.Unclear) => MaterialFeedbackReasons.Unclear,
+            var l when l == MaterialFeedbackReasons.Label(MaterialFeedbackReasons.ContentError) => MaterialFeedbackReasons.ContentError,
+            _ => MaterialFeedbackReasons.Other
+        };
+        try
+        {
+            IsBusy = true;
+            await _api.SubmitMaterialFeedbackAsync(DocumentId, new SubmitMaterialFeedbackRequest
+            {
+                Useful = false,
+                Reason = reason
+            });
+            ShowFeedbackReasons = false;
+            HasMyFeedback = true;
+            MyFeedbackLabel = $"Gracias: registramos «{MaterialFeedbackReasons.Label(reason)}».";
+            MensajeEstado = MyFeedbackLabel;
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UsarEnOtraClaseAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        try
+        {
+            IsBusy = true;
+            var targets = await _api.GetReuseTargetsAsync(DocumentId);
+            if (targets.Count == 0)
+            {
+                MensajeEstado = "No hay otras clases del mismo curso/unidad para reutilizar.";
+                return;
+            }
+
+            var labels = targets.Select(t => t.Label).ToArray();
+            var choice = await Shell.Current.DisplayActionSheet(
+                "Usar en otra clase", "Cancelar", null, labels);
+            if (string.IsNullOrWhiteSpace(choice) || choice == "Cancelar") return;
+
+            var target = targets.FirstOrDefault(t => t.Label == choice);
+            if (target is null) return;
+
+            var result = await _api.ReuseEducationalDocumentAsync(DocumentId, new ReuseEducationalDocumentRequest
+            {
+                TargetClassId = target.ClassId,
+                SetAsCurrent = true
+            });
+
+            var warn = result.ObjectiveChanged
+                ? $" OA cambió ({result.SourceObjectiveCode} → {result.TargetObjectiveCode}). Revise el material."
+                : string.Empty;
+            MensajeEstado = $"Material copiado a clase {target.ClassNumber}.{warn}";
+
+            var go = await Shell.Current.DisplayAlert(
+                "Material reutilizado",
+                "¿Abrir la copia en la clase destino?",
+                "Abrir", "Quedarme");
+            if (go)
+            {
+                DocumentId = result.DocumentId;
+                DocumentIdText = result.DocumentId.ToString();
+                ClaseId = result.ClassId.ToString();
+                await CargarAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task GuardarComoPlantillaAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        try
+        {
+            IsBusy = true;
+            var doc = await _api.SaveEducationalDocumentAsTemplateAsync(DocumentId);
+            Apply(doc);
+            MensajeEstado = "Plantilla guardada. Aparece en Biblioteca → Plantillas.";
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DuplicarAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        try
+        {
+            IsBusy = true;
+            var doc = await _api.DuplicateEducationalDocumentAsync(DocumentId, new DuplicateEducationalDocumentRequest());
+            DocumentId = doc.Id;
+            DocumentIdText = doc.Id.ToString();
+            Apply(doc);
+            MensajeEstado = "Copia creada en esta clase (borrador).";
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task MarcarVersionActualAsync()
+    {
+        if (DocumentId == Guid.Empty) return;
+        try
+        {
+            IsBusy = true;
+            var doc = await _api.SetCurrentEducationalDocumentAsync(DocumentId);
+            Apply(doc);
+            MensajeEstado = "Esta versión quedó como actual para la clase.";
+        }
+        catch (Exception ex)
+        {
+            MensajeEstado = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private void Apply(EducationalDocumentDetailDto doc)
     {
         DocumentId = doc.Id;
@@ -283,8 +489,20 @@ public partial class EducationalDocumentEditorViewModel : ObservableObject
         TotalPoints = doc.TotalPoints;
         Duration = doc.EstimatedDurationMinutes;
         IsOutdated = doc.IsOutdated;
+        IsTemplate = doc.IsTemplate;
+        HasLineage = doc.SourceDocumentId is not null;
+        LineageLabel = HasLineage
+            ? "Copia / reutilizado desde otro material"
+            : null;
         RowVersion = doc.RowVersion;
         CurriculumRefs = $"OA {doc.ObjectiveCode} · {doc.CurriculumRelease} · Bloom {doc.BloomLevel}";
+        QualitySummary = doc.QualityReport?.SummaryLine;
+        HasMyFeedback = doc.MyFeedback is not null;
+        MyFeedbackLabel = doc.MyFeedback is null
+            ? null
+            : doc.MyFeedback.Useful
+                ? "Ya indicó que le sirvió."
+                : $"Ya indicó: {MaterialFeedbackReasons.Label(doc.MyFeedback.Reason)}";
         Items.Clear();
         foreach (var i in doc.Items) Items.Add(i);
         Specs.Clear();

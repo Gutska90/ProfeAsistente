@@ -46,7 +46,8 @@ public class EducationalDocumentController : ControllerBase
         [FromQuery] Guid? courseId,
         [FromQuery] string? type,
         [FromQuery] string? q,
-        CancellationToken ct)
+        [FromQuery] bool templatesOnly = false,
+        CancellationToken ct = default)
     {
         try
         {
@@ -59,7 +60,7 @@ public class EducationalDocumentController : ControllerBase
                     parsed = MaterialUiLabels.ParseTypeLabel(type);
             }
 
-            return Ok(await _service.ListLibraryAsync(courseId, parsed, q, ct));
+            return Ok(await _service.ListLibraryAsync(courseId, parsed, q, templatesOnly, ct));
         }
         catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
         { return ToProblem(ex); }
@@ -118,9 +119,35 @@ public class EducationalDocumentController : ControllerBase
     }
 
     [HttpPost("api/educational-documents/{documentId:guid}/duplicate")]
-    public async Task<IActionResult> Duplicate(Guid documentId, CancellationToken ct)
+    public async Task<IActionResult> Duplicate(
+        Guid documentId, [FromBody] DuplicateEducationalDocumentRequest? request, CancellationToken ct)
     {
-        try { return Ok(await _service.DuplicateAsync(documentId, ct)); }
+        try { return Ok(await _service.DuplicateAsync(documentId, request, ct)); }
+        catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
+        { return ToProblem(ex); }
+    }
+
+    [HttpPost("api/educational-documents/{documentId:guid}/reuse")]
+    public async Task<IActionResult> Reuse(
+        Guid documentId, [FromBody] ReuseEducationalDocumentRequest request, CancellationToken ct)
+    {
+        try { return Ok(await _service.ReuseAsync(documentId, request, ct)); }
+        catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
+        { return ToProblem(ex); }
+    }
+
+    [HttpGet("api/educational-documents/{documentId:guid}/reuse-targets")]
+    public async Task<IActionResult> ReuseTargets(Guid documentId, CancellationToken ct)
+    {
+        try { return Ok(await _service.ListReuseTargetsAsync(documentId, ct)); }
+        catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
+        { return ToProblem(ex); }
+    }
+
+    [HttpPost("api/educational-documents/{documentId:guid}/save-as-template")]
+    public async Task<IActionResult> SaveAsTemplate(Guid documentId, CancellationToken ct)
+    {
+        try { return Ok(await _service.SaveAsTemplateAsync(documentId, ct)); }
         catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
         { return ToProblem(ex); }
     }
@@ -206,6 +233,19 @@ public class EducationalDocumentController : ControllerBase
     public async Task<IActionResult> Validate(Guid documentId, CancellationToken ct)
     {
         try { return Ok(await _service.ValidateAsync(documentId, ct)); }
+        catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
+        { return ToProblem(ex); }
+    }
+
+    [HttpPost("api/educational-documents/{documentId:guid}/feedback")]
+    [ProducesResponseType(typeof(MaterialFeedbackDto), StatusCodes.Status201Created)]
+    public async Task<IActionResult> Feedback(Guid documentId, [FromBody] SubmitMaterialFeedbackRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _service.SubmitFeedbackAsync(documentId, request, ct);
+            return CreatedAtAction(nameof(GetById), new { documentId }, result);
+        }
         catch (Exception ex) when (ex is EducationalDocumentGenerationException or GeminiApiException)
         { return ToProblem(ex); }
     }

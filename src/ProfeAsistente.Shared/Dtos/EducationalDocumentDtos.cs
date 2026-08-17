@@ -75,6 +75,43 @@ public sealed class ReorderEducationalItemDto
     public int Order { get; set; }
 }
 
+public sealed class ReuseEducationalDocumentRequest
+{
+    public Guid TargetClassId { get; set; }
+    public bool SetAsCurrent { get; set; } = true;
+    public string? Title { get; set; }
+}
+
+public sealed class DuplicateEducationalDocumentRequest
+{
+    public bool SetAsCurrent { get; set; }
+}
+
+public sealed class ReuseEducationalDocumentResultDto
+{
+    public Guid DocumentId { get; set; }
+    public Guid ClassId { get; set; }
+    public Guid? SourceDocumentId { get; set; }
+    public bool ObjectiveChanged { get; set; }
+    public string? SourceObjectiveCode { get; set; }
+    public string? TargetObjectiveCode { get; set; }
+    public List<string> Warnings { get; set; } = [];
+    public EducationalDocumentDetailDto? Document { get; set; }
+}
+
+public sealed class ReuseTargetClassDto
+{
+    public Guid ClassId { get; set; }
+    public Guid PlanificacionId { get; set; }
+    public int ClassNumber { get; set; }
+    public DateOnly ClassDate { get; set; }
+    public string ObjectiveCode { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public bool SameObjective { get; set; }
+    public string? CourseName { get; set; }
+    public string? UnitName { get; set; }
+}
+
 public sealed class EducationalDocumentSummaryDto
 {
     public Guid Id { get; set; }
@@ -107,6 +144,8 @@ public sealed class EducationalDocumentSummaryDto
     public string? ObjectiveCode { get; set; }
     /// <summary>Línea de contexto para listas (curso · clase · OA).</summary>
     public string ContextLine { get; set; } = string.Empty;
+    public Guid? SourceDocumentId { get; set; }
+    public bool IsTemplate { get; set; }
 }
 
 public sealed class EducationalDocumentGenerationResultDto
@@ -146,7 +185,11 @@ public sealed class EducationalDocumentDetailDto
     public bool IsOutdated { get; set; }
     public bool RequiresReview { get; set; }
     public List<string> Warnings { get; set; } = [];
+    public PedagogicalQualityReport? QualityReport { get; set; }
+    public MaterialFeedbackDto? MyFeedback { get; set; }
     public string? RowVersion { get; set; }
+    public Guid? SourceDocumentId { get; set; }
+    public bool IsTemplate { get; set; }
     public List<EducationalItemDto> Items { get; set; } = [];
     public List<AssessmentSpecificationRowDto> SpecificationTable { get; set; } = [];
     public DateTime CreatedAt { get; set; }

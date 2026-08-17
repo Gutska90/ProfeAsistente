@@ -57,9 +57,16 @@
                                    Text="{Binding ItemCount, StringFormat='{}{0} ítems'}"/>
                             <Label Text="Desactualizado respecto de la clase" TextColor="#E65100"
                                    FontSize="12" FontAttributes="Bold" IsVisible="{Binding IsOutdated}"/>
-                            <Button Text="Ir a la clase" Style="{StaticResource GhostButton}"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirClaseCommand}"
-                                    CommandParameter="{Binding .}"/>
+                            <Label Text="Plantilla" FontSize="12" FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}" IsVisible="{Binding IsTemplate}"/>
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Usar en otra clase" Style="{StaticResource GhostButton}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.UsarEnOtraClaseCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                <Button Text="Ir a la clase" Style="{StaticResource GhostButton}"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirClaseCommand}"
+                                        CommandParameter="{Binding .}"/>
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

@@ -25,10 +25,9 @@ Que la ficha de clase guíe el ciclo completo del profesor sin que tenga que “
 
 ## Fuera de P6
 
-- Golden tests / sanitizer IA / feedback 👍👎 (calidad pedagógica profunda)
-- Reutilización / plantillas / importar material
-- Evidencia ítem→OA avanzada, Excel, clase de refuerzo automática
-- Rename `ProfeAsistente` → `ProfeAsistente`
+- Golden tests / sanitizer IA / feedback 👍👎 (calidad pedagógica — P10)
+- Reutilización / plantillas / importar material (P12)
+- Evidencia ítem→OA avanzada, Excel, clase de refuerzo automática (P13)
 
 ## Verificación
 

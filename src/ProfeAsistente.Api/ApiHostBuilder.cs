@@ -15,6 +15,7 @@ using ProfeAsistente.Api.Services.Export;
 using ProfeAsistente.Api.Services.PlanningCalendar;
 using ProfeAsistente.Api.Services.PlanningSequence;
 using ProfeAsistente.Api.Services.PlanningSuggestions;
+using ProfeAsistente.Api.Services.Pilot;
 using ProfeAsistente.Api.Security;
 using ProfeAsistente.Api.Services.Auth;
 using ProfeAsistente.CurriculumImporter;
@@ -112,11 +113,16 @@ public static class ApiHostBuilder
         });
         builder.Services.AddScoped<IGeminiClient, GeminiClient>();
         builder.Services.AddScoped<IAiProvider, GeminiAiProvider>();
+        builder.Services.AddSingleton<IAiContextSanitizer, AiContextSanitizer>();
+        builder.Services.AddSingleton<IAiCostEstimator, AiCostEstimator>();
+        builder.Services.AddScoped<IAiUsageTracker, AiUsageTracker>();
+        builder.Services.AddScoped<IPilotMetricsService, PilotMetricsService>();
         builder.Services.AddScoped<ClassGenerationContextBuilder>();
         builder.Services.AddScoped<ClassGenerationValidator>();
         builder.Services.AddScoped<IClassStructureGenerationService, ClassStructureGenerationService>();
         builder.Services.AddScoped<IEducationalItemSimilarityService, EducationalItemSimilarityService>();
         builder.Services.AddScoped<IEducationalDocumentGenerationValidator, EducationalDocumentGenerationValidator>();
+        builder.Services.AddScoped<IPedagogicalQualityEvaluator, PedagogicalQualityEvaluator>();
         builder.Services.AddScoped<EducationalDocumentContextBuilder>();
         builder.Services.AddScoped<IEducationalDocumentGenerationService, EducationalDocumentGenerationService>();
 

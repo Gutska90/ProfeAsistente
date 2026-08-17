@@ -8,6 +8,7 @@ using ProfeAsistente.Api.Models.AI;
 using ProfeAsistente.Api.Models.AI.Responses;
 using ProfeAsistente.Api.Services.AI;
 using ProfeAsistente.Api.Services.AI.Gemini;
+using ProfeAsistente.Api.Services.Authorization;
 using ProfeAsistente.Shared.Dtos;
 using ProfeAsistente.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,8 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
     private readonly AiUsageOptions _usageOptions;
     private readonly IHostEnvironment _env;
     private readonly ILogger<ClassStructureGenerationService> _logger;
+    private readonly ICurrentUserService _current;
+    private readonly IAiCostEstimator _cost;
 
     public ClassStructureGenerationService(
         ProfeAsistenteDbContext db,
@@ -42,7 +45,9 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         IOptions<GeminiOptions> geminiOptions,
         IOptions<AiUsageOptions> usageOptions,
         IHostEnvironment env,
-        ILogger<ClassStructureGenerationService> logger)
+        ILogger<ClassStructureGenerationService> logger,
+        ICurrentUserService current,
+        IAiCostEstimator cost)
     {
         _db = db;
         _ai = ai;
@@ -52,6 +57,8 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         _usageOptions = usageOptions.Value;
         _env = env;
         _logger = logger;
+        _current = current;
+        _cost = cost;
     }
 
     public async Task<ClassStructureGenerationResultDto> GenerateAsync(
@@ -111,13 +118,20 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         };
         _db.ClassStructureGenerations.Add(generation);
 
+        var (promptId, promptVersion) = PromptCatalog.ForClassStructure(_geminiOptions.PromptVersion);
         var usage = new AiUsageRecord
         {
             Id = Guid.NewGuid(),
             OperationType = "ClassStructure",
+            Purpose = AiGenerationPurposes.ClassPlan,
+            PromptId = promptId,
+            PromptVersion = promptVersion,
             ClassId = classId,
+            GenerationId = generation.Id,
             Provider = _ai.ProviderName,
             Model = _geminiOptions.Model,
+            UserId = _current.UserId,
+            InstitutionId = _current.ActiveInstitutionId is Guid iid && iid != Guid.Empty ? iid : null,
             StartedAt = DateTime.UtcNow
         };
         _db.AiUsageRecords.Add(usage);
@@ -594,10 +608,7 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
 
         await ApplyRevisionToClaseAsync(generation.ClassId, revision, ct);
 
-        usage.CompletedAt = DateTime.UtcNow;
-        usage.Success = true;
-        usage.InputTokens = result.InputTokenCount;
-        usage.OutputTokens = result.OutputTokenCount;
+        CompleteUsage(usage, success: true, result.InputTokenCount, result.OutputTokenCount, elapsedMs, model: result.Model);
 
         await _db.SaveChangesAsync(ct);
     }
@@ -620,14 +631,30 @@ public sealed class ClassStructureGenerationService : IClassStructureGenerationS
         generation.OutputTokenCount = result?.OutputTokenCount;
         generation.RowVersion = Guid.NewGuid().ToByteArray();
 
-        usage.CompletedAt = DateTime.UtcNow;
-        usage.Success = false;
-        usage.ErrorCode = errorCode;
-        usage.InputTokens = result?.InputTokenCount;
-        usage.OutputTokens = result?.OutputTokenCount;
+        CompleteUsage(usage, success: false, result?.InputTokenCount, result?.OutputTokenCount, elapsedMs, errorCode, result?.Model);
 
         try { await _db.SaveChangesAsync(ct); }
         catch (Exception ex) { _logger.LogError(ex, "No se pudo persistir fallo de generación {Id}", generation.Id); }
+    }
+
+    private void CompleteUsage(
+        AiUsageRecord usage,
+        bool success,
+        int? inputTokens,
+        int? outputTokens,
+        long latencyMs,
+        string? errorCode = null,
+        string? model = null)
+    {
+        usage.Success = success;
+        usage.InputTokens = inputTokens;
+        usage.OutputTokens = outputTokens;
+        usage.LatencyMilliseconds = latencyMs;
+        usage.EstimatedCostUsd = _cost.EstimateUsd(model ?? usage.Model, inputTokens, outputTokens);
+        usage.CompletedAt = DateTime.UtcNow;
+        usage.ErrorCode = errorCode;
+        if (!string.IsNullOrWhiteSpace(model))
+            usage.Model = model;
     }
 
     private async Task ApplyRevisionToClaseAsync(Guid classId, ClassStructureRevision revision, CancellationToken ct)

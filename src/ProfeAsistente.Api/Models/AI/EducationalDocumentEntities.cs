@@ -24,6 +24,7 @@ public class EducationalDocument
     public Guid ObjectiveId { get; set; }
     public string ObjectiveCode { get; set; } = string.Empty;
     public string WarningsJson { get; set; } = "[]";
+    public string? QualityReportJson { get; set; }
     public bool RequiresReview { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -34,11 +35,31 @@ public class EducationalDocument
     public bool IsDeleted { get; set; }
     public byte[] RowVersion { get; set; } = Guid.NewGuid().ToByteArray();
     public string? ConfigurationFingerprint { get; set; }
+    /// <summary>Documento origen al duplicar o reutilizar (P12).</summary>
+    public Guid? SourceDocumentId { get; set; }
+    /// <summary>Marcado como plantilla reutilizable en biblioteca.</summary>
+    public bool IsTemplate { get; set; }
 
     public ICollection<EducationalDocumentGeneration> Generations { get; set; } = [];
     public ICollection<EducationalItem> Items { get; set; } = [];
     public ICollection<AssessmentSpecification> Specifications { get; set; } = [];
     public ICollection<EducationalDocumentRevision> Revisions { get; set; } = [];
+    public ICollection<EducationalDocumentFeedback> FeedbackEntries { get; set; } = [];
+}
+
+public class EducationalDocumentFeedback
+{
+    public Guid Id { get; set; }
+    public Guid EducationalDocumentId { get; set; }
+    public Guid? GenerationId { get; set; }
+    public Guid UserId { get; set; }
+    public bool Useful { get; set; }
+    public string? Reason { get; set; }
+    public string? Comment { get; set; }
+    public string PromptVersion { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public EducationalDocument? Document { get; set; }
 }
 
 public class EducationalDocumentGeneration

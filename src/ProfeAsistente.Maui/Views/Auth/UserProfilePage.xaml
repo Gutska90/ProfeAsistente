@@ -2,14 +2,34 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ProfeAsistente.Maui.Views.Auth.UserProfilePage"
-             Title="Perfil">
-    <VerticalStackLayout Padding="16" Spacing="8">
-        <Label x:Name="DisplayName" FontSize="20" FontAttributes="Bold"/>
-        <Label x:Name="Email"/>
-        <Label x:Name="Institution"/>
-        <Label x:Name="SyncStatus" FontSize="13" TextColor="Gray"/>
-        <Button Text="Sincronizar ahora" Clicked="OnSyncNow"/>
-        <Button Text="Cambiar contraseña" Clicked="OnChangePassword"/>
-        <Button Text="Cerrar sesión" Clicked="OnLogout"/>
-    </VerticalStackLayout>
+             Title="Configuración">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label x:Name="DisplayName" FontSize="20" FontAttributes="Bold"/>
+            <Label x:Name="Email"/>
+            <Label x:Name="Institution"/>
+            <Label x:Name="SyncStatus" FontSize="13" TextColor="Gray"/>
+            <Button Text="Sincronizar ahora" Clicked="OnSyncNow"/>
+            <Button Text="Cambiar contraseña" Clicked="OnChangePassword"/>
+
+            <BoxView HeightRequest="1" Color="#DDD" Margin="0,8"/>
+            <Label Text="Piloto 0.1" FontAttributes="Bold" FontSize="16"/>
+            <Label x:Name="PilotSummary" FontSize="13" LineBreakMode="WordWrap"
+                   Text="Cargue el resumen para ver exportación, feedback y tiempo ahorrado."/>
+            <Button Text="Actualizar métricas" Clicked="OnRefreshPilot"/>
+
+            <Label Text="¿Cuántos minutos ahorró en esta sesión?" FontAttributes="Bold" Margin="0,8,0,0"/>
+            <Entry x:Name="MinutesSavedEntry" Keyboard="Numeric" Placeholder="ej. 20" Text="20"/>
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Sí lo usé en clase" Clicked="OnUsedInClassYes"/>
+                <Button Text="Aún no" Style="{StaticResource GhostButton}" Clicked="OnUsedInClassNo"/>
+            </HorizontalStackLayout>
+            <Button Text="Registrar ahorro de tiempo" BackgroundColor="#4A7C59" TextColor="White"
+                    Clicked="OnSubmitPilotReport"/>
+            <Label x:Name="PilotMessage" FontSize="12" TextColor="#555" LineBreakMode="WordWrap"/>
+
+            <BoxView HeightRequest="1" Color="#DDD" Margin="0,8"/>
+            <Button Text="Cerrar sesión" Clicked="OnLogout"/>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

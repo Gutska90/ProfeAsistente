@@ -16,6 +16,10 @@
             <Label Text="Este material fue creado con una configuración anterior de la clase."
                    TextColor="#E65100" FontAttributes="Bold" FontSize="12"
                    IsVisible="{Binding IsOutdated}"/>
+            <Label Text="Plantilla reutilizable" FontAttributes="Bold" FontSize="12"
+                   TextColor="{StaticResource Primary}" IsVisible="{Binding IsTemplate}"/>
+            <Label Text="{Binding LineageLabel}" Style="{StaticResource CaptionLabel}"
+                   IsVisible="{Binding HasLineage}"/>
 
             <Label Text="Título" FontAttributes="Bold" />
             <Entry Text="{Binding Title}" />
@@ -24,8 +28,15 @@
             <Label Text="{Binding TotalPoints, StringFormat='Puntaje total: {0}'}" />
             <Label Text="{Binding Duration, StringFormat='Duración: {0} min'}" />
 
+            <Label Text="{Binding QualitySummary}" Style="{StaticResource CaptionLabel}"/>
+
             <FlexLayout Wrap="Wrap">
                 <Button Text="Guardar" Command="{Binding GuardarCommand}" BackgroundColor="#4A7C59" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Usar en otra clase" Command="{Binding UsarEnOtraClaseCommand}"
+                        BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Duplicar aquí" Command="{Binding DuplicarCommand}" Margin="0,0,8,8" />
+                <Button Text="Guardar plantilla" Command="{Binding GuardarComoPlantillaCommand}" Margin="0,0,8,8" />
+                <Button Text="Versión actual" Command="{Binding MarcarVersionActualCommand}" Margin="0,0,8,8" />
                 <Button Text="Validar" Command="{Binding ValidarCommand}" Margin="0,0,8,8" />
                 <Button Text="En revisión" Command="{Binding CambiarEstadoCommand}" CommandParameter="UnderReview" Margin="0,0,8,8" />
                 <Button Text="Revisado" Command="{Binding CambiarEstadoCommand}" CommandParameter="Reviewed" Margin="0,0,8,8" />
@@ -36,6 +47,27 @@
                 <Button Text="Exportar DOCX" Command="{Binding ExportarCommand}" CommandParameter="Student"
                         BackgroundColor="#2F5D8C" TextColor="White" Margin="0,0,8,8" />
             </FlexLayout>
+
+            <Label Text="¿Te sirvió este material?" FontAttributes="Bold"
+                   IsVisible="{Binding HasMyFeedback, Converter={StaticResource InvertedBoolConverter}}"/>
+            <HorizontalStackLayout Spacing="10"
+                                   IsVisible="{Binding HasMyFeedback, Converter={StaticResource InvertedBoolConverter}}">
+                <Button Text="Sí" Command="{Binding FeedbackUtilCommand}"/>
+                <Button Text="No" Command="{Binding FeedbackNoUtilCommand}" Style="{StaticResource SecondaryButton}"/>
+            </HorizontalStackLayout>
+            <VerticalStackLayout Spacing="8" IsVisible="{Binding ShowFeedbackReasons}">
+                <CollectionView ItemsSource="{Binding FeedbackReasonLabels}" SelectedItem="{Binding FeedbackReason}"
+                                SelectionMode="Single" HeightRequest="160">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Label Text="{Binding .}" Padding="8,6"/>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Button Text="Enviar motivo" Command="{Binding EnviarFeedbackNegativoCommand}"/>
+            </VerticalStackLayout>
+            <Label Text="{Binding MyFeedbackLabel}" Style="{StaticResource CaptionLabel}"
+                   IsVisible="{Binding HasMyFeedback}"/>
 
             <Label Text="Vista estudiante (sin respuestas)" FontAttributes="Bold" />
             <Label Text="{Binding StudentPreview}" FontSize="12" LineBreakMode="WordWrap" />
