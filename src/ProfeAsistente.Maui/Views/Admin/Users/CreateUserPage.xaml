@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.Users"
+             x:Class="ProfeAsistente.Maui.Views.Admin.Users.CreateUserPage"
+             x:DataType="vm:CreateUserViewModel"
+             Title="Crear usuario">
+    <VerticalStackLayout Padding="16" Spacing="8">
+        <Entry Placeholder="Usuario" Text="{Binding UserName}"/>
+        <Entry Placeholder="Correo" Text="{Binding Email}"/>
+        <Entry Placeholder="Nombre" Text="{Binding FirstName}"/>
+        <Entry Placeholder="Apellido" Text="{Binding LastName}"/>
+        <Entry Placeholder="Contraseña" IsPassword="True" Text="{Binding Password}"/>
+        <Button Text="Guardar" Command="{Binding SaveCommand}"/>
+        <Label Text="{Binding MensajeEstado}"/>
+    </VerticalStackLayout>
+</ContentPage>

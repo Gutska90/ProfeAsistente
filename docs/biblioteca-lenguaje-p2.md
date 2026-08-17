@@ -15,7 +15,7 @@
 ### Lenguaje UI
 - En pantallas de materiales se muestran **Guía / Actividad / Prueba** y estados en español (**Borrador**, **En revisión**, etc.).
 - No se exponen nombres técnicos (`LearningGuide`, `EducationalDocument`) al profesor.
-- Helper compartido: `AppEducativa.Shared.Ui.MaterialUiLabels`.
+- Helper compartido: `ProfeAsistente.Shared.Ui.MaterialUiLabels`.
 
 ## Fuera de P2
 

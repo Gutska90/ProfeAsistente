@@ -4,7 +4,7 @@
 
 Ayuda a planificar, preparar la clase, generar material alineado a OA, evaluar, leer evidencia y crear refuerzo — sin convertirse en un ERP escolar (no es SIGE / Lirmi / Napsis).
 
-El código de solución todavía usa el prefijo técnico `AppEducativa.*`; el producto visible es **ProfeAsistente**.
+Namespaces y proyectos: `ProfeAsistente.*` (API, MAUI, Shared, CurriculumImporter).
 
 ## Flujo central
 
@@ -26,26 +26,27 @@ Administración curricular y usuarios solo con permisos.
 
 ## Etapas de producto (cerradas)
 
-- **P0** Navegación Hoy + Mis cursos  
-- **P1** Clase como hub Copilot  
-- **P2** Biblioteca + lenguaje UI (Guía / Actividad / Prueba)  
-- **P3** Evaluación → evidencia por OA → refuerzo  
-- **P4** Limpieza técnica (README, `IAiProvider`, CORS, Documento legado deprecado)
+- **P0–P4** Navegación, clase Copilot, biblioteca, evidencia, limpieza técnica  
+- **P5** Consolidación técnica  
+- **P6** Flujo clase end-to-end  
+- **P7** Offline robusto  
+- **P8** Rename `AppEducativa` → `ProfeAsistente`  
+- **P9** Empaquetado piloto Mac Catalyst  
 
 Detalle en `docs/desarrollo-por-etapas.md`.
 
 ## Estructura
 
 ```text
-AppEducativa.sln
+ProfeAsistente.sln
 src/
-  AppEducativa.Api/
-  AppEducativa.Maui/
-  AppEducativa.Shared/
-  AppEducativa.CurriculumImporter/
+  ProfeAsistente.Api/
+  ProfeAsistente.Maui/
+  ProfeAsistente.Shared/
+  ProfeAsistente.CurriculumImporter/
 tests/
-  AppEducativa.Api.Tests/
-  AppEducativa.CurriculumImporter.Tests/
+  ProfeAsistente.Api.Tests/
+  ProfeAsistente.CurriculumImporter.Tests/
 docs/
 ```
 
@@ -55,28 +56,33 @@ docs/
 export PATH="$HOME/.dotnet:$PATH"
 export DOTNET_ROOT="$HOME/.dotnet"
 
-dotnet restore AppEducativa.sln
-dotnet build AppEducativa.sln
-dotnet test tests/AppEducativa.Api.Tests
+dotnet restore ProfeAsistente.sln
+dotnet build ProfeAsistente.sln
+dotnet test tests/ProfeAsistente.Api.Tests
 
 # API
-cd src/AppEducativa.Api
+cd src/ProfeAsistente.Api
 ASPNETCORE_ENVIRONMENT=Development dotnet run --urls http://127.0.0.1:5180
 
-# MAUI (macOS Catalyst)
+# MAUI (macOS Catalyst, desarrollo)
 ./run-maui.sh
+
+# Piloto empaquetado (Release)
+./scripts/smoke-release.sh
+./scripts/publish-piloto-mac.sh
+./scripts/start-piloto.sh
 ```
 
 Demo (si el seed está activo): usuario `admin` / `Admin!Pass123` · API `http://127.0.0.1:5180`.
 
-Variable de entorno para IA: `GEMINI_API_KEY`.
+Variables útiles: `GEMINI_API_KEY`, y en no-Development `PROFEASISTENTE_JWT_KEY` (+ `PROFEASISTENTE_ADMIN_*` en el primer arranque).
 
 ## Material canónico vs legado
 
 | Modelo | Uso |
 |--------|-----|
 | **EducationalDocument** | Flujo actual (clase, biblioteca, exportación Word nueva) |
-| **Documento** (`/api/documentos`) | **Deprecado** — se mantiene por compatibilidad; no expandir |
+| **Documento** (`/api/documentos`) | **Retirado (P5)** — responde **410 Gone**; no expandir |
 
 ## CORS
 
@@ -89,4 +95,4 @@ Los servicios de estructura de clase y materiales usan `IAiProvider` (hoy `Gemin
 
 ## Fuera de alcance (por diseño)
 
-SIGE, libro de clases legal, PME ministerial, DocenteMás, pagos, sync nube multi-colegio, rename completo de solución.
+SIGE, libro de clases legal, PME ministerial, DocenteMás, pagos, sync nube multi-colegio.

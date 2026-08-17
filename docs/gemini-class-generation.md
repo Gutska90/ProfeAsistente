@@ -33,7 +33,7 @@ La API key se lee solo desde la variable de entorno indicada (por defecto `GEMIN
 
 ```powershell
 $env:GEMINI_API_KEY="TU_API_KEY"
-dotnet run --project src/AppEducativa.Api
+dotnet run --project src/ProfeAsistente.Api
 ```
 
 Para persistir la variable en la sesión de usuario (Windows) sin subirla al repositorio:
@@ -46,7 +46,7 @@ En macOS/Linux:
 
 ```bash
 export GEMINI_API_KEY="TU_API_KEY"
-dotnet run --project src/AppEducativa.Api
+dotnet run --project src/ProfeAsistente.Api
 ```
 
 Archivos locales ignorados por Git: `.env`, `appsettings.Development.local.json`, `appsettings.*.local.json`.
@@ -108,7 +108,7 @@ Antes de generar se crea/recupera `ClaseCurriculumSnapshot`. Cada generación es
 ## Pruebas
 
 ```bash
-dotnet test AppEducativa.sln
+dotnet test ProfeAsistente.sln
 ```
 
 Prueba manual opcional contra la API real (no CI):

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.CurriculumReview"
+             x:Class="ProfeAsistente.Maui.Views.Admin.CurriculumReview.CurriculumReviewDashboardPage"
+             x:DataType="vm:CurriculumReviewDashboardViewModel"
+             Title="Revisión curricular">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="{Binding DocumentTitle}" FontSize="20" FontAttributes="Bold" LineBreakMode="WordWrap" />
+            <Label Text="{Binding LevelName}" FontSize="14" />
+            <Label Text="{Binding SubjectName}" FontSize="14" />
+            <Label Text="{Binding ConfidenceText}" FontSize="13" />
+
+            <Label Text="Estados" FontAttributes="Bold" Margin="0,8,0,0" />
+            <Label Text="{Binding ImportStatus, StringFormat='Estado del lote: {0}'}" FontSize="13" />
+            <Label Text="{Binding ReviewStatus, StringFormat='Estado de revisión: {0}'}" FontSize="13" />
+
+            <Label Text="{Binding CountsText}" FontSize="12" LineBreakMode="WordWrap" />
+            <Label Text="{Binding IssuesText}" FontSize="12" LineBreakMode="WordWrap" />
+            <Label Text="{Binding MetaText}" FontSize="11" TextColor="#555" LineBreakMode="WordWrap" />
+            <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            <Label Text="Navegación" FontAttributes="Bold" Margin="0,8,0,0" />
+            <FlexLayout Wrap="Wrap">
+                <Button Text="Unidades" Command="{Binding IrUnidadesCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+                <Button Text="OA" Command="{Binding IrObjetivosCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+                <Button Text="Problemas" Command="{Binding IrProblemasCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+                <Button Text="Diferencias" Command="{Binding IrDiffCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+                <Button Text="Historial" Command="{Binding IrCambiosCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+                <Button Text="Comentarios" Command="{Binding IrComentariosCommand}" IsEnabled="{Binding CanNavigateReview}" Margin="0,0,8,8" />
+            </FlexLayout>
+
+            <Label Text="Acciones" FontAttributes="Bold" />
+            <FlexLayout Wrap="Wrap">
+                <Button Text="Validar nuevamente" Command="{Binding RevalidarCommand}" IsEnabled="{Binding CanRevalidate}" Margin="0,0,8,8" />
+                <Button Text="Listo para aprobar" Command="{Binding MarcarListoCommand}" IsEnabled="{Binding CanMarkReady}" Margin="0,0,8,8" />
+                <Button Text="Aprobar" Command="{Binding AprobarCommand}" IsEnabled="{Binding CanApprove}" BackgroundColor="#2E7D32" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Rechazar" Command="{Binding RechazarCommand}" IsEnabled="{Binding CanReject}" BackgroundColor="#C62828" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Importar" Command="{Binding ImportarCommand}" IsEnabled="{Binding CanImport}" BackgroundColor="#1565C0" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Publicar" Command="{Binding PublicarCommand}" IsEnabled="{Binding CanPublish}" BackgroundColor="#6A1B9A" TextColor="White" Margin="0,0,8,8" />
+            </FlexLayout>
+
+            <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

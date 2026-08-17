@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.Institutions"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Admin.Institutions.InstitutionListPage"
+             x:DataType="vm:InstitutionListViewModel"
+             Title="Establecimientos">
+    <VerticalStackLayout Padding="16" Spacing="8">
+        <Entry Placeholder="Nombre nuevo" Text="{Binding NewName}"/>
+        <Button Text="Crear" Command="{Binding CreateCommand}"/>
+        <Button Text="Actualizar" Command="{Binding LoadCommand}"/>
+        <Label Text="{Binding MensajeEstado}"/>
+        <CollectionView ItemsSource="{Binding Items}" HeightRequest="400">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:InstitutionDto">
+                    <Label Text="{Binding Name}" Padding="4"/>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

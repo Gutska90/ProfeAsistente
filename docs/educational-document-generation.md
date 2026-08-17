@@ -63,7 +63,7 @@ Desde detalle de clase:
 ## Pruebas
 
 ```bash
-dotnet test AppEducativa.sln
+dotnet test ProfeAsistente.sln
 ```
 
 Prueba manual opcional:

@@ -14,18 +14,18 @@ No se usa Gemini en esta iteración. La aprobación humana es obligatoria antes 
 
 | Capa | Proyecto | Rol |
 |------|----------|-----|
-| Configuración | `AppEducativa.CurriculumImporter/Configuration` | `curriculum-sources.json`, perfiles de parser |
+| Configuración | `ProfeAsistente.CurriculumImporter/Configuration` | `curriculum-sources.json`, perfiles de parser |
 | Descarga | `Services/Download` + `Download/HttpSourceDownloader` | HTTPS, dominio permitido, SHA-256, ETag/304 |
 | Almacenamiento | `Services/Storage` | `App_Data/Curriculum/{Downloads,Extracted,Imports}` |
 | Extracción | `PdfProgramStudyExtractor` (UglyToad.PdfPig) | Páginas + texto normalizado |
 | Parser | `MathematicsFourthGradeProgramParser` | Unidad, OA, indicadores, habilidades, actitudes |
 | Validación / Diff / Import | servicios del importer + orquestador API | Revisión, diferencias, transacción |
 | API admin | `CurriculumAdminController` | Endpoints bajo `/api/admin/curriculum` |
-| UI | `AppEducativa.Maui/Views/Admin` | Fuentes, lotes, detalle, preview |
+| UI | `ProfeAsistente.Maui/Views/Admin` | Fuentes, lotes, detalle, preview |
 
 ## Configurar la URL oficial
 
-Archivo: `src/AppEducativa.CurriculumImporter/Configuration/curriculum-sources.json`  
+Archivo: `src/ProfeAsistente.CurriculumImporter/Configuration/curriculum-sources.json`  
 (también se copia a la salida de la API: `Configuration/curriculum-sources.json`).
 
 URL verificada del Programa de Estudio Matemática 4° Básico:
@@ -47,7 +47,7 @@ Rutas relativas al content root de la API (configurable con `Curriculum:StorageR
 | PDF descargado | `App_Data/Curriculum/Downloads/` |
 | Texto extraído | `App_Data/Curriculum/Extracted/` |
 | JSON intermedio / corregido | `App_Data/Curriculum/Imports/` |
-| SQLite | `appeducativa.db` (content root de la API) |
+| SQLite | `profeasistente.db` (content root de la API) |
 
 La API pública **nunca** expone rutas locales de archivos.
 

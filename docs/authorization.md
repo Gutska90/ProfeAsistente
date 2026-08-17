@@ -15,7 +15,7 @@ Los roles **agrupan** permisos (`PermissionCatalog`). No basar la seguridad solo
 
 Ejemplos: `Users.View`, `Planning.Create`, `Planning.ViewOwn`, `Curriculum.Publish`, `Materials.Export`, `Audit.View`, `System.Configure`.
 
-Lista completa: `AppEducativa.Shared.Security.AppPermissions`.
+Lista completa: `ProfeAsistente.Shared.Security.AppPermissions`.
 
 ## Policies
 

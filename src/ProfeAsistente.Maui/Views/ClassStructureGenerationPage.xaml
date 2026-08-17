@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels"
+             x:Class="ProfeAsistente.Maui.Views.ClassStructureGenerationPage"
+             x:DataType="vm:ClassStructureGenerationViewModel"
+             Title="Generar estructura">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="Contexto curricular" FontAttributes="Bold" FontSize="18" />
+            <Label Text="{Binding ContextoResumen}" FontSize="13" TextColor="#444" LineBreakMode="WordWrap" />
+            <Label Text="{Binding OaTexto}" FontSize="13" LineBreakMode="WordWrap" />
+            <Label Text="{Binding BloomTexto, StringFormat='Bloom: {0}'}" FontSize="12" TextColor="#555" />
+            <Label Text="{Binding VersionCurricular, StringFormat='Versión curricular: {0}'}"
+                   FontSize="12" TextColor="#555" />
+
+            <Label Text="Indicadores" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding Indicadores}" HeightRequest="90">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Label Text="{Binding .}" FontSize="12" Margin="0,2" LineBreakMode="WordWrap" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Habilidades" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Habilidades}" HeightRequest="60">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Label Text="{Binding .}" FontSize="12" Margin="0,2" LineBreakMode="WordWrap" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Actitudes" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Actitudes}" HeightRequest="60">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Label Text="{Binding .}" FontSize="12" Margin="0,2" LineBreakMode="WordWrap" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Configuración" FontAttributes="Bold" FontSize="18" Margin="0,12,0,0" />
+
+            <Label Text="Duración (minutos)" FontAttributes="Bold" FontSize="13" />
+            <Entry Text="{Binding DurationMinutes}" Keyboard="Numeric" />
+
+            <Label Text="Conocimientos previos" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding PreviousKnowledge}" AutoSize="TextChanges" MinimumHeightRequest="60"
+                    Placeholder="Qué se supone que ya saben..." />
+
+            <Label Text="Recursos disponibles" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding AvailableResources}" AutoSize="TextChanges" MinimumHeightRequest="60"
+                    Placeholder="Pizarra, proyector, texto, etc." />
+
+            <Label Text="Contexto del curso / estudiantes" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding StudentContext}" AutoSize="TextChanges" MinimumHeightRequest="60"
+                    Placeholder="Características del grupo..." />
+
+            <Label Text="Instrucciones adicionales para la IA" FontAttributes="Bold" FontSize="13" />
+            <Editor Text="{Binding TeacherInstructions}" AutoSize="TextChanges" MinimumHeightRequest="60"
+                    Placeholder="Énfasis, restricciones, estilo..." />
+
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeFormativeAssessment}" />
+                <Label Text="Incluir evaluación formativa" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IncludeDifferentiation}" />
+                <Label Text="Incluir diferenciación" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <FlexLayout Wrap="Wrap" Margin="0,8,0,0">
+                <Button Text="Generar estructura"
+                        Command="{Binding GenerarCommand}"
+                        BackgroundColor="#2F5D8C"
+                        TextColor="White"
+                        Margin="0,0,8,8" />
+                <Button Text="Cancelar"
+                        Command="{Binding CancelarCommand}"
+                        Margin="0,0,8,8" />
+            </FlexLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Label Text="{Binding MensajeEstado}" FontSize="13" TextColor="#333" LineBreakMode="WordWrap" />
+            <Label Text="{Binding ErrorMensaje}" FontSize="13" TextColor="#C62828" LineBreakMode="WordWrap" />
+
+            <Label Text="Advertencias" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding Advertencias}" HeightRequest="80">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <Label Text="{Binding .}" FontSize="12" TextColor="#8A6D3B" LineBreakMode="WordWrap" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

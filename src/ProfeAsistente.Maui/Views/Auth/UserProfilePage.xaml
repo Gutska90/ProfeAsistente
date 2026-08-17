@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ProfeAsistente.Maui.Views.Auth.UserProfilePage"
+             Title="Perfil">
+    <VerticalStackLayout Padding="16" Spacing="8">
+        <Label x:Name="DisplayName" FontSize="20" FontAttributes="Bold"/>
+        <Label x:Name="Email"/>
+        <Label x:Name="Institution"/>
+        <Label x:Name="SyncStatus" FontSize="13" TextColor="Gray"/>
+        <Button Text="Sincronizar ahora" Clicked="OnSyncNow"/>
+        <Button Text="Cambiar contraseña" Clicked="OnChangePassword"/>
+        <Button Text="Cerrar sesión" Clicked="OnLogout"/>
+    </VerticalStackLayout>
+</ContentPage>

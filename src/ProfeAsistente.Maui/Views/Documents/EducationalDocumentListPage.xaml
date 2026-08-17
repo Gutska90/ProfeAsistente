@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Documents"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Documents.EducationalDocumentListPage"
+             x:DataType="vm:EducationalDocumentListViewModel"
+             Title="Materiales de la clase">
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <Label Text="Materiales de esta clase" Style="{StaticResource TitleLabel}"/>
+        <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+        <Button Text="Crear guía" Command="{Binding GenerarCommand}" CommandParameter="LearningGuide"/>
+        <Button Text="Crear actividad" Command="{Binding GenerarCommand}" CommandParameter="Exercises"
+                Style="{StaticResource SecondaryButton}"/>
+        <Button Text="Crear prueba" Command="{Binding GenerarCommand}" CommandParameter="Assessment"
+                Style="{StaticResource SecondaryButton}"/>
+        <Button Text="Actualizar" Command="{Binding CargarCommand}" Style="{StaticResource GhostButton}"/>
+        <CollectionView ItemsSource="{Binding Documentos}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:EducationalDocumentSummaryDto">
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:EducationalDocumentListViewModel}}, Path=AbrirCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="{Binding TypeLabel}" FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}"/>
+                                <Label Text="{Binding StatusLabel}" Style="{StaticResource CaptionLabel}"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding Title}" FontAttributes="Bold" />
+                            <Label FontSize="12" TextColor="#555"
+                                   Text="{Binding ItemCount, StringFormat='{}{0} ítems'}" />
+                            <Label Text="Desactualizado" TextColor="#E65100" FontAttributes="Bold" FontSize="12"
+                                   IsVisible="{Binding IsOutdated}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"/>
+    </VerticalStackLayout>
+</ContentPage>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.Courses"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Admin.Courses.CourseDetailPage"
+             x:DataType="vm:CourseDetailViewModel"
+             Title="Curso">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="14">
+            <Label Text="{Binding Course.DisplayName}" Style="{StaticResource TitleLabel}"/>
+            <Label Text="{Binding SubjectsLine}" Style="{StaticResource CaptionLabel}"/>
+            <Label Text="{Binding MensajeEstado}" Style="{StaticResource CaptionLabel}"/>
+
+            <Label Text="En este curso" Style="{StaticResource SectionLabel}" Margin="0"/>
+            <Button Text="Nueva planificación" Command="{Binding NewPlanningCommand}"/>
+            <Button Text="Planificaciones del curso" Command="{Binding OpenAllPlanningsCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Materiales" Command="{Binding OpenMaterialsCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Estudiantes (nómina y PIE)" Command="{Binding OpenRosterCommand}" Style="{StaticResource SecondaryButton}"/>
+            <Button Text="Volver a Hoy" Command="{Binding OpenTodayCommand}" Style="{StaticResource GhostButton}"/>
+
+            <Label Text="Planificaciones" Style="{StaticResource SectionLabel}"/>
+            <CollectionView ItemsSource="{Binding Plannings}" SelectionMode="None" HeightRequest="220">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PlanificacionResumenDto">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenPlanningCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Nombre}" FontAttributes="Bold"/>
+                                <Label Text="{Binding Unidad}" Style="{StaticResource CaptionLabel}"/>
+                                <Label Text="{Binding CantidadClases, StringFormat='{}{0} clases'}" FontSize="12" TextColor="{StaticResource Primary}"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Actualizar" Command="{Binding LoadCommand}" Style="{StaticResource GhostButton}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

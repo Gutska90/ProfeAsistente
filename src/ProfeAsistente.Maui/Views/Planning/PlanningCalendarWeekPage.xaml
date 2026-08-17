@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Planning"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             xmlns:cal="clr-namespace:ProfeAsistente.Shared.Planning;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Planning.PlanningCalendarWeekPage"
+             x:DataType="vm:PlanningCalendarWeekViewModel"
+             Title="Semana">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="8">
+            <Label Text="Vista semanal" FontSize="22" FontAttributes="Bold"/>
+            <Label Text="{Binding MensajeEstado}" FontSize="13" LineBreakMode="WordWrap"/>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Text="‹" Command="{Binding PreviousPeriodCommand}" WidthRequest="48"/>
+                <Label Grid.Column="1" Text="{Binding PeriodTitle}" FontAttributes="Bold"
+                       HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                <Button Grid.Column="2" Text="›" Command="{Binding NextPeriodCommand}" WidthRequest="48"/>
+            </Grid>
+            <CollectionView ItemsSource="{Binding WeekDays}" HeightRequest="420">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="cal:CalendarDayCell">
+                        <Border Stroke="#DDD" Padding="8" Margin="0,0,0,6" StrokeThickness="1">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectDayCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding HasSessions}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="#E8F5E9"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="Stroke" Value="#2E7D32"/>
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding WeekdayName}" FontAttributes="Bold"/>
+                                <Label Text="{Binding DayNumber, StringFormat='Día {0}'}" FontSize="12" TextColor="#555"/>
+                                <Label Text="{Binding Detail}" FontSize="12" LineBreakMode="WordWrap"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <CollectionView ItemsSource="{Binding DaySessions}" HeightRequest="120">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PlanningCalendarSessionDto">
+                        <Button Text="Abrir clase"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirClaseCommand}"
+                                CommandParameter="{Binding .}"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Mes" Command="{Binding OpenMonthPageCommand}"/>
+            <Button Text="Horario" Command="{Binding ConfigurarCommand}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

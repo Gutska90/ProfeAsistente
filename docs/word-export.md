@@ -60,23 +60,23 @@ Además se inspecciona el texto del DOCX antes de marcar Completed.
 
 ```powershell
 dotnet ef migrations add AddDocumentExports `
-  --project src/AppEducativa.Api `
-  --startup-project src/AppEducativa.Api
+  --project src/ProfeAsistente.Api `
+  --startup-project src/ProfeAsistente.Api
 
 dotnet ef database update `
-  --project src/AppEducativa.Api `
-  --startup-project src/AppEducativa.Api
+  --project src/ProfeAsistente.Api `
+  --startup-project src/ProfeAsistente.Api
 ```
 
 ## MAUI
 
 - `ExportOptionsPage` — opciones y tipo
-- `ExportProgressPage` — descarga y guardado en Documents/AppEducativa
+- `ExportProgressPage` — descarga y guardado en Documents/ProfeAsistente
 - `ExportHistoryPage` — historial
 
 ## Limitaciones
 
 - No hay cola en segundo plano (`UseBackgroundQueue=false`).
-- El selector de carpeta nativo no está integrado; se guarda en Documents/AppEducativa.
+- El selector de carpeta nativo no está integrado; se guarda en Documents/ProfeAsistente.
 - PDF de materiales educativos nuevos no forma parte de este módulo (el legado QuestPDF sigue en `ExportService`).
 - Compatibilidad Word/LibreOffice: validada con OpenXmlValidator; apertura visual manual recomendada.

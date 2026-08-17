@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.CurriculumReview"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Admin.CurriculumReview.CurriculumReviewObjectiveDetailPage"
+             x:DataType="vm:CurriculumReviewObjectiveDetailViewModel"
+             Title="Detalle OA">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="10">
+            <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+            <Label Text="{Binding IsDirty, StringFormat='Cambios pendientes: {0}'}" FontSize="11" TextColor="#B45309" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+
+            <Label Text="Extraído" FontAttributes="Bold" FontSize="16" />
+            <Label Text="{Binding ExtractedCode, StringFormat='Código: {0}'}" FontSize="13" />
+            <Label Text="{Binding ExtractedDescription}" FontSize="12" LineBreakMode="WordWrap" />
+            <Label Text="{Binding PageText, StringFormat='Página: {0}'}" FontSize="11" TextColor="#555" />
+            <Label Text="{Binding ConfidenceText, StringFormat='Confianza: {0}'}" FontSize="11" TextColor="#555" />
+            <Label Text="{Binding SourceFragment}" FontSize="11" TextColor="#666" LineBreakMode="WordWrap" />
+
+            <Label Text="Editable" FontAttributes="Bold" FontSize="16" Margin="0,8,0,0" />
+            <Label Text="Código" FontSize="12" />
+            <Entry Text="{Binding EditCode}" />
+            <Label Text="Descripción" FontSize="12" />
+            <Editor Text="{Binding EditDescription}" AutoSize="TextChanges" MinimumHeightRequest="80" />
+            <Label Text="{Binding Decision, StringFormat='Decisión: {0}'}" FontSize="13" FontAttributes="Bold" />
+            <Label Text="{Binding WasManuallyModified, StringFormat='Modificado manualmente: {0}'}" FontSize="11" />
+
+            <FlexLayout Wrap="Wrap">
+                <Button Text="Aceptar" Command="{Binding AceptarCommand}" BackgroundColor="#2E7D32" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Corregir" Command="{Binding CorregirCommand}" BackgroundColor="#EF6C00" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Rechazar" Command="{Binding RechazarCommand}" BackgroundColor="#C62828" TextColor="White" Margin="0,0,8,8" />
+                <Button Text="Guardar" Command="{Binding GuardarCommand}" IsEnabled="{Binding IsDirty}" Margin="0,0,8,8" />
+            </FlexLayout>
+
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Anterior pendiente" Command="{Binding AnteriorPendienteCommand}" />
+                <Button Text="Siguiente pendiente" Command="{Binding SiguientePendienteCommand}" />
+            </HorizontalStackLayout>
+
+            <Label Text="Problemas" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding Issues}" HeightRequest="100">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:ReviewFieldIssueDto">
+                        <VerticalStackLayout Padding="0,2">
+                            <Label Text="{Binding Severity}" FontSize="11" FontAttributes="Bold" />
+                            <Label Text="{Binding Message}" FontSize="12" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label Text="Indicadores" FontAttributes="Bold" />
+            <Button Text="Agregar indicador" Command="{Binding AgregarIndicadorCommand}" />
+            <CollectionView ItemsSource="{Binding Indicadores}" HeightRequest="180">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:ReviewIndicatorDto">
+                        <VerticalStackLayout Padding="0,4" Spacing="2">
+                            <Label Text="{Binding Decision, StringFormat='[{0}]'}" FontSize="11" FontAttributes="Bold" />
+                            <Label Text="{Binding Description}" FontSize="12" LineBreakMode="WordWrap" />
+                            <BoxView HeightRequest="1" Color="#EEE" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

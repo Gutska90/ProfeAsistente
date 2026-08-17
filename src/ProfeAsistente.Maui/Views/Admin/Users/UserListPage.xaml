@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin.Users"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Admin.Users.UserListPage"
+             x:DataType="vm:UserListViewModel"
+             Title="Usuarios">
+    <VerticalStackLayout Padding="16" Spacing="8">
+        <Button Text="Actualizar" Command="{Binding LoadCommand}"/>
+        <Button Text="Crear usuario" Command="{Binding CreateCommand}"/>
+        <Label Text="{Binding MensajeEstado}"/>
+        <CollectionView ItemsSource="{Binding Users}" HeightRequest="400">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:UserSummaryDto">
+                    <Label Text="{Binding DisplayName}" Padding="4"/>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </VerticalStackLayout>
+</ContentPage>

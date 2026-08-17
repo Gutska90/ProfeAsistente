@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Exports"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Exports.ExportHistoryPage"
+             x:Name="RootPage"
+             x:DataType="vm:ExportHistoryViewModel"
+             Title="Historial de exportaciones">
+    <VerticalStackLayout Padding="16" Spacing="10">
+        <Label Text="{Binding MensajeEstado}" />
+        <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+        <CollectionView ItemsSource="{Binding Items}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:ExportSummaryDto">
+                    <Border Stroke="#DDD" Padding="10" Margin="0,0,0,8">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding FileName}" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                            <Label FontSize="12" Text="{Binding DocumentType, StringFormat='Tipo: {0}'}" />
+                            <Label FontSize="12" Text="{Binding Audience, StringFormat='Audiencia: {0}'}" />
+                            <Label FontSize="12" Text="{Binding Status, StringFormat='Estado: {0}'}" />
+                            <FlexLayout Wrap="Wrap">
+                                <Button Text="Descargar"
+                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.DescargarCommand}"
+                                        CommandParameter="{Binding .}" Margin="0,0,8,4" />
+                                <Button Text="Eliminar"
+                                        Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.EliminarCommand}"
+                                        CommandParameter="{Binding .}" Margin="0,0,8,4" />
+                            </FlexLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+    </VerticalStackLayout>
+</ContentPage>

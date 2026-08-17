@@ -6,15 +6,15 @@ Variables de entorno:
 
 | Variable | Uso |
 |----------|-----|
-| `APPEDUCATIVA_JWT_KEY` | Clave de firma (≥32 caracteres). Obligatoria fuera de Development. |
-| `APPEDUCATIVA_ADMIN_USERNAME` | Usuario del primer administrador |
-| `APPEDUCATIVA_ADMIN_EMAIL` | Correo del primer administrador |
-| `APPEDUCATIVA_ADMIN_PASSWORD` | Contraseña inicial (≥10, mayúscula, minúscula, número, especial) |
+| `PROFEASISTENTE_JWT_KEY` | Clave de firma (≥32 caracteres). Obligatoria fuera de Development. |
+| `PROFEASISTENTE_ADMIN_USERNAME` | Usuario del primer administrador |
+| `PROFEASISTENTE_ADMIN_EMAIL` | Correo del primer administrador |
+| `PROFEASISTENTE_ADMIN_PASSWORD` | Contraseña inicial (≥10, mayúscula, minúscula, número, especial) |
 
 En `appsettings.json` (sección `Authentication`):
 
-- `Issuer`: `AppEducativa.Api`
-- `Audience`: `AppEducativa.Maui`
+- `Issuer`: `ProfeAsistente.Api`
+- `Audience`: `ProfeAsistente.Maui`
 - `AccessTokenMinutes`: 30
 - `RefreshTokenDays`: 7
 - `MaximumFailedAttempts`: 5
@@ -28,10 +28,10 @@ La clave **no** se guarda en código, SQLite, MAUI ni logs.
 Se crea solo si no existe ningún usuario (`IdentityBootstrap`).
 
 ```bash
-export APPEDUCATIVA_JWT_KEY='su-clave-secreta-de-al-menos-32-chars'
-export APPEDUCATIVA_ADMIN_USERNAME=admin
-export APPEDUCATIVA_ADMIN_EMAIL=admin@local.test
-export APPEDUCATIVA_ADMIN_PASSWORD='Admin!Pass123'
+export PROFEASISTENTE_JWT_KEY='su-clave-secreta-de-al-menos-32-chars'
+export PROFEASISTENTE_ADMIN_USERNAME=admin
+export PROFEASISTENTE_ADMIN_EMAIL=admin@local.test
+export PROFEASISTENTE_ADMIN_PASSWORD='Admin!Pass123'
 ```
 
 En Development, si faltan variables, se usa un admin de desarrollo con `MustChangePassword=true`.

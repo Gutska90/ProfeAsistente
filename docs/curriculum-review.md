@@ -96,7 +96,7 @@ Cada mutación envía `rowVersion` (Base64). Conflicto → HTTP **409**.
 ```bash
 export DOTNET_ROOT="$HOME/.dotnet" PATH="$DOTNET_ROOT:$PATH"
 cd /Users/user/ProfeAsistente
-dotnet ef database update --project src/AppEducativa.Api --startup-project src/AppEducativa.Api
+dotnet ef database update --project src/ProfeAsistente.Api --startup-project src/ProfeAsistente.Api
 # o simplemente iniciar la API (Database.Migrate al arrancar)
 ```
 

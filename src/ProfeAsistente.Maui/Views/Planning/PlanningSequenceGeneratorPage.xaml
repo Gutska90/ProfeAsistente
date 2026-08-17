@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Planning"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Planning.PlanningSequenceGeneratorPage"
+             x:DataType="vm:PlanningSequenceGeneratorViewModel"
+             Title="Secuencia">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="8">
+            <Label Text="Generador de secuencia" FontSize="22" FontAttributes="Bold"/>
+            <Label Text="{Binding MensajeEstado}"/>
+            <Label Text="{Binding Step, StringFormat='Paso {0} de 5'}"/>
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Anterior" Command="{Binding PrevStepCommand}"/>
+                <Button Text="Siguiente" Command="{Binding NextStepCommand}"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout>
+                <CheckBox IsChecked="{Binding IncludeDiagnostic}"/><Label Text="Diagnóstico" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout>
+                <CheckBox IsChecked="{Binding IncludeReview}"/><Label Text="Repaso" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout>
+                <CheckBox IsChecked="{Binding IncludeAssessment}"/><Label Text="Evaluación" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <Button Text="Generar propuesta" Command="{Binding GenerarPropuestaCommand}"/>
+            <Label Text="{Binding DeficitText}" TextColor="#A33"/>
+            <CollectionView ItemsSource="{Binding Items}" HeightRequest="280">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PlanningSequenceProposalItemDto">
+                        <VerticalStackLayout Padding="4">
+                            <Label Text="{Binding Order, StringFormat='Clase {0}'}" FontAttributes="Bold"/>
+                            <Label Text="{Binding ScheduledDate}"/>
+                            <Label Text="{Binding ObjectiveCode}"/>
+                            <Label Text="{Binding BloomLevel}"/>
+                            <Label Text="{Binding SuggestedTitle}"/>
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Confirmar secuencia" Command="{Binding ConfirmarCommand}"/>
+            <Button Text="Ver cobertura" Command="{Binding IrCoberturaCommand}"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

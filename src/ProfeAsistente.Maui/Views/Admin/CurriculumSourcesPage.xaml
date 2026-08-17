@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ProfeAsistente.Maui.ViewModels.Admin"
+             xmlns:dto="clr-namespace:ProfeAsistente.Shared.Dtos;assembly=ProfeAsistente.Shared"
+             x:Class="ProfeAsistente.Maui.Views.Admin.CurriculumSourcesPage"
+             x:DataType="vm:CurriculumSourcesViewModel"
+             Title="Fuentes curriculares">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="Fuentes oficiales configuradas" FontSize="20" FontAttributes="Bold" />
+            <Label Text="Solo se descargan URLs registradas en curriculum-sources.json (dominio curriculumnacional.cl)."
+                   TextColor="#555" LineBreakMode="WordWrap" />
+            <Label Text="{Binding MensajeEstado}" FontSize="12" LineBreakMode="WordWrap" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Actualizar" Command="{Binding CargarCommand}" />
+                <Button Text="Recargar JSON" Command="{Binding RecargarFuentesCommand}" />
+            </HorizontalStackLayout>
+
+            <CollectionView ItemsSource="{Binding Fuentes}" SelectionMode="Single"
+                            SelectedItem="{Binding FuenteSeleccionada}"
+                            HeightRequest="360">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:CurriculumAdminSourceDto">
+                        <Border Stroke="#CCC" Padding="12" Margin="0,0,0,8">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding Nombre}" FontAttributes="Bold" />
+                                <Label Text="{Binding ExternalId}" FontSize="12" TextColor="#336699" />
+                                <Label Text="{Binding Url}" FontSize="11" TextColor="#666" LineBreakMode="TailTruncation" />
+                                <Label Text="{Binding TipoFuente}" FontSize="11" TextColor="#444" />
+                                <Label Text="{Binding NivelEsperado}" FontSize="11" TextColor="#666" />
+                                <Label Text="{Binding AsignaturaEsperada}" FontSize="11" TextColor="#666" />
+                                <Button Text="Crear lote de importación"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CurriculumSourcesViewModel}}, Path=CrearLoteCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
